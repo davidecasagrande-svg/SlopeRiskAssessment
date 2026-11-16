@@ -4039,7 +4039,7 @@ textarea.input { min-height: 90px; resize: vertical; }
         <sc-for list="{{ photos }}" as="ph" hint-placeholder-count="0">
           <div class="card blueprint" style="padding:0;gap:0;overflow:visible">
             <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-            <div class="duotone" style="aspect-ratio:4/3;background:var(--color-surface);display:grid;place-items:center">
+            <div style="position:relative;overflow:hidden;aspect-ratio:4/3;background:var(--color-surface);display:grid;place-items:center">
               <sc-if value="{{ ph.hasImg }}" hint-placeholder-val="{{ false }}"><img src="{{ ph.imgSrc }}" alt="{{ ph.caption }}" style="width:100%;height:100%;object-fit:cover;display:block"></sc-if>
               <sc-if value="{{ ph.noImg }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;opacity:.6">photo placeholder</span></sc-if>
             </div>
@@ -4502,7 +4502,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   <div class="dialog-backdrop" style="position:absolute;align-items:flex-end;padding:0;z-index:21">
     <div class="dialog" style="width:100%;border-bottom:0;padding:14px 14px 20px;background:var(--color-bg);display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div class="dialog-title" style="font-size:18px">Caption · {{ capFile }}</div><span style="font-size:12px;opacity:.7">{{ capCount }}</span></div>
-      <div class="duotone" style="aspect-ratio:16/9;background:var(--color-surface)"><img src="{{ capSrc }}" alt="New photo" style="width:100%;height:100%;object-fit:cover;display:block"></div>
+      <div style="position:relative;overflow:hidden;aspect-ratio:16/9;background:var(--color-surface)"><img src="{{ capSrc }}" alt="New photo" style="width:100%;height:100%;object-fit:cover;display:block"></div>
       <input class="sra-input" ref="{{ capRef }}" maxLength="60" placeholder="Short caption, e.g. Site from N end" value="{{ capText }}" onChange="{{ setCapText }}" onKeyDown="{{ capKey }}">
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <sc-for list="{{ capChips }}" as="c" hint-placeholder-count="4"><button class="btn btn-secondary" style="min-height:40px;font-size:13px" onClick="{{ c.pick }}">{{ c.label }}</button></sc-for>
