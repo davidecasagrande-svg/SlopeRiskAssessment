@@ -3968,14 +3968,18 @@ textarea.input { min-height: 90px; resize: vertical; }
       <sc-if value="{{ sdIsJ }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:6px">
           <div style="font-family:var(--font-heading);font-weight:600;font-size:16px">Retaining structures &amp; dimensions</div>
-          <table class="table" style="font-size:13px">
-            <thead><tr><th>Type</th><th>Length (m)</th><th>Height (m)</th></tr></thead>
-            <tbody>
-              <sc-for list="{{ sdJ }}" as="r" hint-placeholder-count="5">
-                <tr><td style="font-family:var(--font-heading);font-weight:600">{{ r.label }}</td><td><input class="sra-input" inputMode="decimal" value="{{ r.L }}" onChange="{{ r.setL }}"></td><td><input class="sra-input" inputMode="decimal" value="{{ r.H }}" onChange="{{ r.setH }}"></td></tr>
-              </sc-for>
-            </tbody>
-          </table>
+          <div style="font-size:12px">Optional comment under each type prints in the right-hand column of the SD record, beside that row.</div>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 72px 72px;gap:6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase"><span>Type</span><span>Length (m)</span><span>Height (m)</span></div>
+          <sc-for list="{{ sdJ }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:6px 0;border-top:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) 72px 72px;gap:6px;align-items:center">
+                <span style="font-family:var(--font-heading);font-weight:600;font-size:14px">{{ r.label }}</span>
+                <input class="sra-input" inputMode="decimal" aria-label="{{ r.lLabel }}" value="{{ r.L }}" onChange="{{ r.setL }}">
+                <input class="sra-input" inputMode="decimal" aria-label="{{ r.hLabel }}" value="{{ r.H }}" onChange="{{ r.setH }}">
+              </div>
+              <input class="sra-input" aria-label="{{ r.cLabel }}" placeholder="{{ r.cPh }}" value="{{ r.c }}" onChange="{{ r.setC }}">
+            </div>
+          </sc-for>
           <div class="field"><label>Other — type</label><input class="sra-input" value="{{ sdJOtherType }}" onChange="{{ setSdJOtherType }}"></div>
         </div>
       </sc-if>
@@ -4001,11 +4005,11 @@ textarea.input { min-height: 90px; resize: vertical; }
       <sc-if value="{{ sdIsK }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:6px">
           <div style="font-family:var(--font-heading);font-weight:600;font-size:16px">Specific developments / features · distance from road (m)</div>
-          <div style="font-size:12px;opacity:.7">Enter a distance above or below to mark the feature present. The K score takes the highest applicable value.</div>
+          <div style="font-size:12px;opacity:.7">Enter a distance above or below to mark the feature present. The K score takes the highest applicable value. A comment on a row prints in the right-hand column beside that row, e.g. "See sketch".</div>
           <sc-for list="{{ sdK }}" as="r" hint-placeholder-count="6">
             <div style="display:grid;grid-template-columns:minmax(0,1fr) 72px 72px;gap:6px;align-items:center;padding:4px 0;border-top:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)">
               <div style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:13px">{{ r.label }} <span style="opacity:.55;font-size:11px">{{ r.pts }}</span></span>
-                <sc-if value="{{ r.hasName }}" hint-placeholder-val="{{ false }}"><input class="sra-input" placeholder="Describe" value="{{ r.n }}" onChange="{{ r.setN }}"></sc-if></div>
+                <sc-if value="{{ r.hasName }}" hint-placeholder-val="{{ false }}"><input class="sra-input" placeholder="Describe" value="{{ r.n }}" onChange="{{ r.setN }}"></sc-if><input class="sra-input" aria-label="{{ r.cLabel }}" placeholder="Comment beside this row (optional)" value="{{ r.c }}" onChange="{{ r.setC }}"></div>
               <input class="sra-input" inputMode="decimal" placeholder="Above" value="{{ r.a }}" onChange="{{ r.setA }}">
               <input class="sra-input" inputMode="decimal" placeholder="Below" value="{{ r.b }}" onChange="{{ r.setB }}">
             </div>
@@ -4864,7 +4868,7 @@ class Component extends DCLogic {
     list.push(f('RA.xlsx', 'SRA Summary Report v3.12'), f('RA.csv', 'Risk Analysis Sheet (RSMS)'));
     this.sheetFiles(s).forEach(x => list.push(f(x.suf, x.caption)));
     const xtra = this.sheetFiles(s).filter(x => x.n > 1 && (x.k === 'S01' || x.k === 'S02')).length;
-    list.push(f('SD.pdf', `Slope Description Record v4 (${9 + xtra} pages)`));
+    list.push(f('SD.pdf', `Slope Description Record v4 (${9 + xtra + Math.ceil((s.photos || []).filter(p => p?.src).length / 8)} pages)`));
     return list;
   }
   sheetFiles(s) {
@@ -4918,6 +4922,64 @@ class Component extends DCLogic {
     (s.hazards || []).slice(0, 8).forEach((h, i) => { const n = i + 1; const c = this.compute(h, A); v['hz' + n] = this.hzName(h); v['pd' + n] = pw(h.pd); v['pt' + n] = pw(h.pt); v['pp' + n] = h.pd != null && h.pt != null ? pw(h.pd * h.pt) + (c.L ? ` (${c.L})` : '') : ''; });
     return v;
   }
+  // ---------- SD extras: circled scores, J/K side comments, photo pages ----------
+  // Centre of each score number in the form's "Typical Scoring" lists: key → [page (1-based), x, y, digits]
+  SD_CIRC = {"B1r10":[1,430.9,449.6,2],"B1r8":[1,430.8,437.4,1],"B1r5":[1,430.8,425.1,1],"B1r0":[1,430.8,413.6,1],"B1s20":[1,520.2,449.6,2],"B1s15":[1,520.2,437.4,2],"B1s10":[1,520.2,425.1,2],"B1s5":[1,521.0,413.6,1],"B2_20":[1,481.6,379.1,2],"B2_15":[1,481.6,367.7,2],"B2_10":[1,481.6,356.1,2],"B2_8":[1,481.5,344.6,1],"B2_0":[1,481.6,333.1,1],"B3_0":[1,484.4,298.7,1],"B3_5":[1,484.4,287.1,1],"B3_10":[1,484.4,275.6,2],"B4r5":[1,433.6,229.4,1],"B4r4":[1,433.6,217.2,1],"B4r2":[1,433.6,204.9,1],"B4r0":[1,433.6,193.5,1],"B4s5":[1,522.0,229.4,1],"B4s4":[1,522.0,217.2,1],"B4s2":[1,522.0,204.9,1],"B4s0":[1,522.0,193.5,1],"D5":[1,488.0,119.3,1],"D0":[1,488.4,107.7,1],"E1rLoose":[4,508.8,738.1,2],"E1rTension":[4,508.8,726.6,2],"E1rOverhang":[4,508.8,715.1,2],"E1rSheared":[4,508.8,703.6,2],"E1rErodible":[4,508.7,692.1,1],"E1rMany":[4,508.8,664.5,2],"E1rSome":[4,508.8,653.0,1],"E1rNone":[4,508.8,641.5,1],"E1sTension":[4,508.8,607.0,2],"E1sToeHeave":[4,508.8,595.5,2],"E1sBulging":[4,508.8,584.0,2],"E1sDeform":[4,508.8,572.5,2],"E1sMajor":[4,508.8,545.0,2],"E1sMinor":[4,508.8,533.4,1],"E1sNone":[4,508.8,521.9,1],"E2planes":[4,526.2,444.9,2],"E2wedges":[4,525.3,433.5,2],"E2topple":[4,528.2,410.4,2],"E2open":[4,528.1,399.0,1],"E2tight":[4,528.2,387.5,1],"E2many":[4,511.6,359.9,2],"E2some":[4,511.6,348.4,1],"E2none":[4,511.6,336.9,1],"Fnone":[4,528.6,276.8,1],"Fweep":[4,529.9,265.3,1],"Fhoriz":[4,529.8,253.8,1],"Gmains":[5,506.1,724.3,1],"Gstorm":[5,506.0,712.8,1],"Htension":[5,508.8,605.6,1],"Hpond":[5,509.4,594.2,1],"HvNone":[5,508.8,582.6,1],"HvSparse":[5,508.8,571.1,1],"HvDense":[5,508.8,559.6,1],"Iheavy":[5,509.4,440.0,2],"Islight":[5,509.4,428.4,1],"Iprev":[5,509.4,417.0,1],"Inone":[5,509.4,405.4,1],"Jcrack":[6,509.4,367.5,2],"Jbulge":[6,509.4,356.0,2],"Jtilt":[6,509.4,344.4,2],"Jsettle":[6,509.4,333.0,2],"Jslide":[6,509.4,321.5,2],"Jloose":[6,509.4,309.9,2],"Jcorr":[6,509.4,298.5,1],"Jseep":[6,509.4,287.0,1],"Jgood":[6,509.4,275.5,1],"Jnone":[6,509.4,264.0,1],"Kocc":[7,508.8,231.1,2],"Kunocc":[7,508.8,219.6,1],"Kroad":[7,508.8,208.1,2],"Krail":[7,508.8,196.6,2],"Kpublic":[7,508.8,185.1,1],"Kpole":[7,508.8,173.6,1],"Kprivate":[7,508.8,162.1,1],"Knone":[7,508.8,150.6,1]};
+  sdCircleKeys(s) {
+    const SD = this.SD; const sc = SD.score(s); const a = sc.auto; const ovr = s.sd?.ovr || {}; const cb = s.sd?.cb || {}; const has = id => !!cb[id]; const any = (...x) => x.some(has); const out = [];
+    const ok = k => !(ovr[k] !== '' && ovr[k] != null); const add = (...k) => out.push(...k);
+    const mat = sc.scoreMat; const B = s.B || {}; const n = v => (v === '' || v == null || !isFinite(+v)) ? null : +v;
+    if (ok('B1') && a.B1 != null) add((mat === 'Soil' ? 'B1s' : 'B1r') + a.B1);
+    if (ok('B2') && a.B2 != null) add('B2_' + a.B2);
+    if (ok('B3') && a.B3 != null) add('B3_' + a.B3);
+    if (ok('B4') && a.B4 != null) { const nat = (an, soil) => an == null ? null : soil ? (an >= 45 ? 5 : an >= 35 ? 4 : an >= 25 ? 2 : 0) : (an >= 70 ? 5 : an >= 60 ? 4 : an >= 50 ? 2 : 0);
+      const upSoil = has('B.aboveSoil') || (!has('B.aboveRock') && mat === 'Soil'), dnSoil = has('B.belowSoil') || (!has('B.belowRock') && mat === 'Soil');
+      const up = nat(n(B.aboveA), upSoil), dn = nat(n(B.belowA), dnSoil);
+      if (up != null && (dn == null || up >= dn)) add((upSoil ? 'B4s' : 'B4r') + up); else if (dn != null) add((dnSoil ? 'B4s' : 'B4r') + dn); }
+    if (ok('D')) { if (a.D === 5) add('D5'); else if (any('D.none', 'D.notKnown')) add('D0'); }
+    if (ok('E1')) { const rockIds = [['E1.rLoose', 'E1rLoose', 10], ['E1.rTension', 'E1rTension', 10], ['E1.rOverhang', 'E1rOverhang', 10], ['E1.rSheared', 'E1rSheared', 10], ['E1.rErodible', 'E1rErodible', 5], ['E1.rMany', 'E1rMany', 10], ['E1.rSome', 'E1rSome', 5], ['E1.rNone', 'E1rNone', 0]];
+      const soilIds = [['E1.sTension', 'E1sTension', 20], ['E1.sToeHeave', 'E1sToeHeave', 20], ['E1.sBulging', 'E1sBulging', 20], ['E1.sDeform', 'E1sDeform', 10], ['E1.sMajor', 'E1sMajor', 10], ['E1.sMinor', 'E1sMinor', 5], ['E1.sNone', 'E1sNone', 0]];
+      const sum = L => L.reduce((t, [id, , v]) => t + (has(id) ? v : 0), 0); const anyOf = L => L.some(([id]) => has(id));
+      const g = sum(soilIds) > sum(rockIds) || (!anyOf(rockIds) && anyOf(soilIds)) ? soilIds : rockIds; g.forEach(([id, k]) => { if (has(id)) add(k); }); }
+    if (ok('E2')) [['E2.planes', 'E2planes'], ['E2.wedges', 'E2wedges'], ['E2.topple', 'E2topple'], ['E2.open', 'E2open'], ['E2.tight', 'E2tight'], ['E2.many', 'E2many'], ['E2.some', 'E2some'], ['E2.none', 'E2none']].forEach(([id, k]) => { if (has(id)) add(k); });
+    if (ok('F')) { if (has('F.none')) add('Fnone'); if (has('X.weepBlocked')) add('Fweep'); }
+    if (ok('G')) { if (has('G.mains')) add('Gmains'); if (has('X.noStorm')) add('Gstorm'); }
+    if (ok('H')) { if (any('H.tension', 'H.openJoints')) add('Htension'); if (any('H.pondGround', 'H.pondDrains')) add('Hpond'); if (mat === 'Soil') { if (has('H.vNone')) add('HvNone'); if (has('H.vSparse')) add('HvSparse'); if (has('H.vDense')) add('HvDense'); } }
+    if (ok('I')) { const seepSrc = any(...SD.CB.slice(SD.CB.findIndex(c => c[0] === 'I.weep'), SD.CB.findIndex(c => c[0] === 'I.isolated') + 1).map(c => c[0])) || !!(s.sd?.t?.['I.other'] || '').trim();
+      if (a.I === 10) add('Iheavy'); else if (a.I === 5) add(seepSrc || any('I.slight', 'I.moderate') ? 'Islight' : 'Iprev'); else if (has('I.none')) add('Inone'); }
+    if (ok('J')) { if (any('J.rCrack', 'J.sCrack')) add('Jcrack'); if (has('J.rBulge')) add('Jbulge'); if (has('J.rTilt')) add('Jtilt'); if (has('J.rSettle')) add('Jsettle'); if (any('J.rSlide', 'J.sDisplace')) add('Jslide'); if (has('J.aTension')) add('Jloose');
+      if (any('J.rCorrosion', 'J.sCorrosion', 'J.aCorrosion', 'J.mCorrosion')) add('Jcorr'); if (any('J.rSeepFace', 'J.rSeepToe', 'J.sToeSeep', 'J.sSeepCracks')) add('Jseep'); if (has('J.good')) add('Jgood'); if (has('J.na')) add('Jnone'); }
+    if (ok('K')) { const kd = s.sd?.k || {}; const KC = { occ: 'Kocc', unocc: 'Kunocc', road: 'Kroad', rail: 'Krail', public: 'Kpublic', pole: 'Kpole', private: 'Kprivate' };
+      const present = SD.KROWS.filter(r => (kd[r[0]]?.a || '').toString().trim() || (kd[r[0]]?.b || '').toString().trim()).map(r => r[3]).filter(c => KC[c]);
+      if (present.length) { const best = present.reduce((b, c) => SD.KSCORE[c] > SD.KSCORE[b] ? c : b); add(KC[best]); } else if (Object.keys(cb).some(id => id.startsWith('K.') && cb[id])) add('Knone'); }
+    return out;
+  }
+  async sdExtras(doc, PL, s) {
+    const ink = (this.props.sdInk ?? 'pencil') === 'pen' ? PL.rgb(0, 0, 0) : PL.rgb(0.42, 0.42, 0.45); const pages = doc.getPages(); const font = await doc.embedFont(PL.StandardFonts.Helvetica);
+    // 1. hand-drawn circles around the scores that make up each section total
+    this.sdCircleKeys(s).forEach((k, idx) => { const c = this.SD_CIRC[k]; if (!c) return; const pg = pages[c[0] - 1]; if (!pg) return; const rx = c[3] > 1 ? 9.5 : 7, ry = 6.6;
+      let seed = (idx + 1) * 9301 + c[0] * 49297; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      const a0 = -0.9 + rnd() * 0.4, sweep = Math.PI * 2 + 0.45; const pts = []; for (let i = 0; i <= 28; i++) { const t = a0 + sweep * i / 28; const j = 1 + (rnd() - 0.5) * 0.08 + (i > 24 ? 0.07 : 0); pts.push([Math.cos(t) * rx * j, Math.sin(t) * ry * j]); }
+      const rot = -0.12; const d = pts.map(([x, y], i) => { const X = x * Math.cos(rot) - y * Math.sin(rot), Y = x * Math.sin(rot) + y * Math.cos(rot); return `${i ? 'L' : 'M'} ${X.toFixed(2)} ${(-Y).toFixed(2)}`; }).join(' ');
+      pg.drawSvgPath(d, { x: c[1], y: c[2], borderColor: ink, borderWidth: 0.9 }); });
+    // 2. Row comments (assessor's own words only) in the right-hand column, level with the row they belong to (J: structure type rows; K: development rows)
+    const wrap = (txt, w, sz) => { const out = []; String(txt).split('\n').forEach(par => { let line = ''; par.split(/\s+/).filter(Boolean).forEach(word => { const tryL = line ? line + ' ' + word : word; if (font.widthOfTextAtSize(tryL, sz) > w && line) { out.push(line); line = word; } else line = tryL; }); out.push(line); }); return out; };
+    const clean = x => String(x).replace(/[^\x20-\x7E\u00A0-\u00FF\n\u2013\u2014\u2018\u2019\u201C\u201D\u2022]/g, '');
+    const rowNote = (pg, txt, x, yBase, w) => { const one = wrap(txt, w, 8.5); if (one.length <= 1) { pg.drawText(one[0] || '', { x, y: yBase, size: 8.5, font, color: ink }); return; }
+      const two = wrap(txt, w, 7).slice(0, 2); two.forEach((l, i) => pg.drawText(l, { x, y: yBase + 3.5 - i * 7.5, size: 7, font, color: ink })); };
+    { const pg = pages[5]; if (pg) this.SD.JROWS.forEach(([k, , y]) => { const c = clean((s.sd?.j?.[k]?.c || '').trim()); if (c) rowNote(pg, c, 360, y, 184); }); }
+    { const pg = pages[6]; if (pg) this.SD.KROWS.forEach(([k, , y]) => { const c = clean((s.sd?.k?.[k]?.c || '').toString().trim()); if (c) rowNote(pg, c, 372, y, 186); }); }
+    // 3. photo pages at the end: 2 columns × 4, "Photo N. caption"
+    const ph = (s.photos || []).map((p, i) => ({ ...p, no: i + 1 })).filter(p => p?.src); if (!ph.length) return;  // Photo N always matches file PNN
+    const W = 595.28, H = 841.89, mx = 42, gap = 20, colW = (W - 2 * mx - gap) / 2, top = 790, rowH = (top - 40) / 4, imgH = rowH - 30; const site = s.A?.siteNo || '';
+    for (let p0 = 0; p0 < ph.length; p0 += 8) { const pg = doc.addPage([W, H]);
+      pg.drawText('Slope Description Record Version 4', { x: mx, y: H - 34, size: 9, font });
+      const rt = `Photographs${site ? ' · Slope Identification No: ' + site : ''}`; pg.drawText(rt, { x: W - mx - font.widthOfTextAtSize(rt, 9), y: H - 34, size: 9, font }); pg.drawLine({ start: { x: mx, y: H - 40 }, end: { x: W - mx, y: H - 40 }, thickness: 0.6 });
+      for (let j = 0; j < 8 && p0 + j < ph.length; j++) { const i = p0 + j, it = ph[i]; const col = Math.floor(j / 4), row = j % 4; const x0 = mx + col * (colW + gap), yTop = top - row * rowH;
+        const raw = Uint8Array.from(atob(it.src.split(',')[1]), c => c.charCodeAt(0)); const img = /^data:image\/png/i.test(it.src) ? await doc.embedPng(raw) : await doc.embedJpg(raw);
+        const k2 = Math.min(colW / img.width, imgH / img.height); const iw = img.width * k2, ih = img.height * k2; const xi = x0 + (colW - iw) / 2; pg.drawImage(img, { x: xi, y: yTop - ih, width: iw, height: ih });
+        const cap = clean(`Photo ${it.no}.${(it.caption || '').trim() ? ' ' + it.caption.trim() : ''}`); wrap(cap, iw, 8).slice(0, 2).forEach((l, li) => pg.drawText(l, { x: xi, y: yTop - ih - 11 - li * 9.5, size: 8, font })); } }
+  }
   async sdPdf(s) {
     if (!window.PDFLib) throw new Error('PDF library not loaded');
     const cbs = { ...(s.sd?.cb || {}) }; const sk = s.sketches || {};
@@ -4928,8 +4990,8 @@ class Component extends DCLogic {
     // Sketch pages: each sketch photo IS the page. S01 replaces page 2, S02 replaces page 3; extra sheets follow as full pages.
     const extra = k => (Array.isArray(sk[k]?.more) ? sk[k].more : []).filter(m => m?.src);
     const pages = k => [sk[k]?.src ? { src: sk[k].src, drawn: drawn(k) } : null, ...extra(k).map(m => ({ src: m.src, drawn: m.drawn === true || (m.drawn === undefined && (m.items || []).length > 0) }))].filter(Boolean);
-    if (!pages('S01').length && !pages('S02').length) return new Blob([bytes], { type: 'application/pdf' });
-    const PL = window.PDFLib; const doc = await PL.PDFDocument.load(bytes);
+    const PL = window.PDFLib; const doc = await PL.PDFDocument.load(bytes); await this.sdExtras(doc, PL, s);
+    if (!pages('S01').length && !pages('S02').length) return new Blob([await doc.save()], { type: 'application/pdf' });
     // Draws a photo into the area from y0 up to the top of the page (fit, centred; a sideways photo is turned to the portrait page).
     const drawPhoto = async (pg, src, y0) => { const { width: W, height: H } = pg.getSize(); const AH = H - y0; const raw = Uint8Array.from(atob(src.split(',')[1]), c => c.charCodeAt(0)); const img = /^data:image\/png/i.test(src) ? await doc.embedPng(raw) : await doc.embedJpg(raw);
       const rot = img.width > img.height * 1.1;
@@ -5273,9 +5335,9 @@ class Component extends DCLogic {
     const e1Has = p => Object.keys(sdv.cb || {}).some(id => id.startsWith(p)); const e1T = sdv.e1Type || (e1Has('E1.r') ? 'rock' : e1Has('E1.s') ? 'soil' : '');
     out.sdIsE1 = tab === 'E1'; out.e1TypeOpts = [['rock', 'Rock'], ['soil', 'Soil / embankment']].map(([t, l]) => this.optBtn(l, e1T === t, () => { const other = t === 'rock' ? 'E1.s' : 'E1.r'; const n = Object.keys(sdv.cb || {}).filter(id => id.startsWith(other)).length; if (n && !confirm(`Switch to the ${l.toLowerCase()} checklist? ${n} ticked item${n > 1 ? 's' : ''} in the other checklist will be cleared.`)) return; updSd(d => { Object.keys(d.cb).filter(id => id.startsWith(other)).forEach(id => { delete d.cb[id]; }); d.e1Type = t; }); }));
     out.sdGroups = sec ? sec.groups.filter((g, gi) => tab !== 'E1' || (e1T === 'rock' ? gi < 2 : e1T === 'soil' ? gi >= 2 : false)).map(g => ({ title: g.t, opts: (g.items || []).map(id => this.optBtn(id.startsWith('X.') ? SD.XLBL[id] : SD.label(id), !!sdv.cb?.[id], () => sdToggle(id))), texts: (g.texts || []).map(([key, label]) => ({ label, value: sdv.t?.[key] ?? '', onChange: e => { const val = e.target.value; updSd(d => { d.t[key] = val; }); } })) })) : [];
-    out.sdJ = tab === 'J' ? SD.JROWS.map(([k, label]) => ({ label, L: sdv.j?.[k]?.L ?? '', H: sdv.j?.[k]?.H ?? '', setL: e => { const val = e.target.value; updSd(d => { d.j[k] = { ...(d.j[k] || {}), L: val }; }); }, setH: e => { const val = e.target.value; updSd(d => { d.j[k] = { ...(d.j[k] || {}), H: val }; }); } })) : [];
+    out.sdJ = tab === 'J' ? SD.JROWS.map(([k, label]) => ({ label, L: sdv.j?.[k]?.L ?? '', H: sdv.j?.[k]?.H ?? '', setL: e => { const val = e.target.value; updSd(d => { d.j[k] = { ...(d.j[k] || {}), L: val }; }); }, setH: e => { const val = e.target.value; updSd(d => { d.j[k] = { ...(d.j[k] || {}), H: val }; }); }, c: sdv.j?.[k]?.c ?? '', lLabel: `${label} length (m)`, hLabel: `${label} height (m)`, cLabel: `Comment beside ${label}`, cPh: `Comment beside ${label} (optional), e.g. Rail tunnel wing wall`, setC: e => { const val = e.target.value; updSd(d => { d.j[k] = { ...(d.j[k] || {}), c: val }; }); } })) : [];
     out.sdJOtherType = sdv.t?.['J.otherType'] ?? ''; out.setSdJOtherType = e => { const val = e.target.value; updSd(d => { d.t['J.otherType'] = val; }); };
-    out.sdK = tab === 'K' ? SD.KROWS.map(([k, label, , cls, nm]) => { const r = sdv.k?.[k] || {}; const set = p => e => { const val = e.target.value; updSd(d => { d.k[k] = { ...(d.k[k] || {}), [p]: val }; }); }; return { label, pts: `${SD.KSCORE[cls]} pts`, a: r.a ?? '', b: r.b ?? '', n: r.n ?? '', hasName: !!nm, setA: set('a'), setB: set('b'), setN: set('n') }; }) : [];
+    out.sdK = tab === 'K' ? SD.KROWS.map(([k, label, , cls, nm]) => { const r = sdv.k?.[k] || {}; const set = p => e => { const val = e.target.value; updSd(d => { d.k[k] = { ...(d.k[k] || {}), [p]: val }; }); }; return { label, pts: `${SD.KSCORE[cls]} pts`, a: r.a ?? '', b: r.b ?? '', n: r.n ?? '', hasName: !!nm, setA: set('a'), setB: set('b'), setN: set('n'), c: r.c ?? '', cLabel: `Comment beside ${label}`, setC: set('c') }; }) : [];
     out.exKw = this.kwChips(s, 'existingMeasures', this.EX_KW); out.futKw = this.kwChips(s, 'remedial', this.FUT_KW);
     out.existingMeasures = s.existingMeasures; out.setExistingMeasures = e => this.updS(x => { x.existingMeasures = e.target.value; });
     out.furtherOpts = ['Y', 'N'].map(o => this.optBtn(o, s.furtherInv === o, () => this.updS(x => { x.furtherInv = x.furtherInv === o ? '' : o; })));
