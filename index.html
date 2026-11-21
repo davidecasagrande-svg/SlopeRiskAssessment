@@ -3584,7 +3584,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 
 <!-- ===== SLOPE WIZARD ===== -->
 <sc-if value="{{ isSlope }}" hint-placeholder-val="{{ false }}">
-  <!-- Step bar: three boxes around the current step, arrows go one step back / forward (A → B → C1 → C2 → D … L4 → P → RA → Export → Check) -->
+  <!-- Step bar: three boxes around the current step, arrows go one step back / forward (A → B → C1 → C2 → D … L4 → P → RA → Check → Export) -->
   <div style="display:flex;gap:6px;align-items:stretch;margin:-4px 0 14px">
     <button aria-label="Previous step" onClick="{{ navPrev }}" style="flex:none;width:44px;min-height:52px;display:grid;place-items:center;font:inherit;cursor:pointer;border:1px solid var(--color-divider);background:transparent;color:var(--color-text);opacity:{{ navPrevOp }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
     <sc-for list="{{ navBoxes }}" as="st" hint-placeholder-count="3">
@@ -3684,6 +3684,9 @@ textarea.input { min-height: 90px; resize: vertical; }
       <sc-if value="{{ impClassOn }}" hint-placeholder-val="{{ false }}"><div style="border:1px solid var(--color-accent);background:color-mix(in srgb,var(--color-accent) 10%,var(--color-bg));padding:10px 12px;font-size:13px;line-height:1.45;display:flex;justify-content:space-between;align-items:center;gap:10px"><span>{{ impClassLine }}</span><button class="btn btn-secondary" style="flex:none;min-height:44px" onClick="{{ impClassOk }}">Checked</button></div></sc-if>
       <sc-if value="{{ isNatural }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:13px">Natural slope is</span><sc-for list="{{ natSideOpts }}" as="o" hint-placeholder-count="2"><button class="btn {{ o.cls }}" style="min-height:44px" onClick="{{ o.pick }}">{{ o.label }}</button></sc-for></div>
+      </sc-if>
+      <sc-if value="{{ isBridge }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:13px">Abutment is in</span><sc-for list="{{ bridgeInOpts }}" as="o" hint-placeholder-count="2"><button class="btn {{ o.cls }}" style="min-height:44px" onClick="{{ o.pick }}">{{ o.label }}</button></sc-for></div>
       </sc-if>
       <sc-if value="{{ isRetaining }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -3950,6 +3953,10 @@ textarea.input { min-height: 90px; resize: vertical; }
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <sc-for list="{{ hnCats }}" as="c" hint-placeholder-count="3"><button class="btn {{ c.cls }}" style="min-height:44px;font-size:13px" onClick="{{ c.pick }}">{{ c.label }}</button></sc-for>
           </div>
+          <sc-if value="{{ hnBridge }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:13px">Abutment is in</span><sc-for list="{{ bridgeInOpts }}" as="o" hint-placeholder-count="2"><button class="btn {{ o.cls }}" style="min-height:44px" onClick="{{ o.pick }}">{{ o.label }}</button></sc-for></div>
+            <div style="font-size:12px;opacity:.75">{{ hnBridgeHint }}</div>
+          </sc-if>
           <div style="font-size:12px;opacity:.75">Tap every hazard you see on site. Each one becomes H1, H2… in the list below and opens as a hazard in RA · Risk analysis.</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <sc-for list="{{ hnMechs }}" as="m" hint-placeholder-count="6"><button class="btn {{ m.cls }}" style="min-height:44px;font-size:13px" onClick="{{ m.pick }}">{{ m.label }}</button></sc-for>
@@ -4115,6 +4122,9 @@ textarea.input { min-height: 90px; resize: vertical; }
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <sc-for list="{{ hzCats }}" as="c" hint-placeholder-count="3"><button class="btn {{ c.cls }}" style="min-height:44px" onClick="{{ c.pick }}">{{ c.label }}</button></sc-for>
           </div>
+          <sc-if value="{{ hzBridge }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:13px">Abutment is in</span><sc-for list="{{ bridgeInOpts }}" as="o" hint-placeholder-count="2"><button class="btn {{ o.cls }}" style="min-height:44px" onClick="{{ o.pick }}">{{ o.label }}</button></sc-for></div>
+          </sc-if>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <sc-for list="{{ hzMechs }}" as="m" hint-placeholder-count="4"><button class="btn {{ m.cls }}" style="min-height:44px" onClick="{{ m.pick }}">{{ m.label }}</button></sc-for>
           </div>
@@ -4657,7 +4667,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 class Component extends DCLogic {
   state = { sdTab: 'D', sdBusy: false, data: null, view: { name: 'projects', pid: null, sid: null, step: 0 }, newProject: null, newSiteNo: '', hzIdx: 0, sketchMode: 'photo', scale: 200, gps: 'idle', theme: 'light', matrixS: 'vol', zipBusy: false, ref: null, capQ: [], capText: '', skTool: 'pen', skSym: 'crest', skPal: false, termOpen: false, skDlg: null, skLegend: true, hnCat: null, skHzPreset: null, meas: null, mf: { mode: 'h', len: '', ang: '', ht: '', wd: '', lr: 1, up: true, dims: true } };
   KEY = 'sra_app_state_v5';
-  STEPS = [['A','Location'],['B','Geometry'],['C1','Plan sketch'],['C2','Section'],['D–L','Description'],['P','Photos'],['RA','Risk analysis'],['↓','Export'],['✓','Check']];
+  STEPS = [['A','Location'],['B','Geometry'],['C1','Plan sketch'],['C2','Section'],['D–L','Description'],['P','Photos'],['RA','Risk analysis'],['✓','Check'],['↓','Export']];  // Check before Export: the reviewer checks before the files go out
   ARL_BG = { ARL1:'var(--color-accent-900)', ARL2:'var(--color-accent-700)', ARL3:'var(--color-accent-500)', ARL4:'var(--color-accent-300)', ARL5:'var(--color-accent-100)' };
   ARL_FG = { ARL1:'#fff', ARL2:'#fff', ARL3:'#fff', ARL4:'#1d1f20', ARL5:'#1d1f20' };
   pad = { drawing: false, last: null, el: null };
@@ -4667,7 +4677,7 @@ class Component extends DCLogic {
     this._flushNow = () => { clearTimeout(this._sv); this.flush(); }; window.addEventListener('pagehide', this._flushNow); document.addEventListener('visibilitychange', this._flushNow);
     const boot = async () => {
       if (!(window.SRA_T && window.SRA_G && window.SRA_R && window.SRA_X && window.SD_FORM && window.SRA_SK)) { this._t = setTimeout(boot, 60); return; }
-      this.SK = window.SRA_SK; this.SD = window.SD_FORM; this.T = window.SRA_T; this.G = window.SRA_G; this.REF = window.SRA_R.REF; this.readExif = window.SRA_X.readExif;
+      this.SK = window.SRA_SK; this.SD = window.SD_FORM; this.patchE1(); this.T = window.SRA_T; this.G = window.SRA_G; this.REF = window.SRA_R.REF; this.readExif = window.SRA_X.readExif;
       let data = await this.loadData();
       try { navigator.storage?.persist?.(); } catch (e) {}
       if (!data) data = this.demoData();
@@ -4853,7 +4863,9 @@ class Component extends DCLogic {
   guideClass(A) { const c = A?.slopeClass; if (c === 'Cut') return 'cut'; if (c === 'Embankment') return 'fill'; if (c === 'Natural') return A.natSide ? 'natural slope ' + A.natSide : ''; if (c === 'Retaining') return A.structSide ? 'structure ' + A.structSide : ''; if (c === 'Bridge abutment') return 'bridge abutment'; return ''; }
   guideMat(s) { const m = this.matsOf(s); const r = m.includes('Rock'), so = m.includes('Soil') || m.includes('Fill'); return r && so ? 'both rock and soil' : r ? 'rock' : so ? 'soil' : ''; }
   descrOut(s) { const d = (s.A?.descr || '').trim(); const det = this.matLabel(s); const add = det && det.toLowerCase() !== this.guideMat(s) ? 'Material: ' + det : ''; return [d, add].filter(Boolean).join(' · '); }
-  catOf(A) { const c = A?.slopeClass; return c === 'Embankment' || c === 'Bridge abutment' ? 'Embankment' : c === 'Retaining' ? 'Retaining structure' : 'Cutting / natural slope'; }
+  // Bridge abutment: the Guide has no own hazard table, so it uses Table 1 (abutment in cut) or Table 2 (abutment in fill)
+  bridgeCat(A) { return A?.bridgeIn === 'cut' ? 'Cutting / natural slope' : 'Embankment'; }
+  catOf(A) { const c = A?.slopeClass; if (c === 'Bridge abutment') return this.bridgeCat(A); return c === 'Embankment' ? 'Embankment' : c === 'Retaining' ? 'Retaining structure' : 'Cutting / natural slope'; }
   planRefOut(A) { const ex = [A.planDwg && 'Dwg ' + A.planDwg, A.planSheet && 'sheet ' + A.planSheet, A.planDate && 'dated ' + A.planDate, A.planSource && 'source ' + A.planSource].filter(Boolean).join(', '); return [A.planRef || '', ex ? '(' + ex + ')' : ''].filter(Boolean).join(' '); }
   photoLines(s) { return (s.photos || []).map((p, i) => 'P' + String(i + 1).padStart(2, '0') + ' – ' + (p.caption || 'Photograph')); }
   sfText(key) { const A = this.cur().s?.A || {}; const la = key === 'sf_s' ? A.lat1 : A.lat2, lo = key === 'sf_s' ? A.lon1 : A.lon2; return la !== '' && la != null && lo !== '' && lo != null && isFinite(+la) && isFinite(+lo) ? (+la).toFixed(5) + ', ' + (+lo).toFixed(5) : ''; }
@@ -4953,6 +4965,16 @@ class Component extends DCLogic {
   // ---------- SD extras: circled scores, J/K side comments, photo pages ----------
   // Centre of each score number in the form's "Typical Scoring" lists: key → [page (1-based), x, y, digits]
   SD_CIRC = {"B1r10":[1,430.9,449.6,2],"B1r8":[1,430.8,437.4,1],"B1r5":[1,430.8,425.1,1],"B1r0":[1,430.8,413.6,1],"B1s20":[1,520.2,449.6,2],"B1s15":[1,520.2,437.4,2],"B1s10":[1,520.2,425.1,2],"B1s5":[1,521.0,413.6,1],"B2_20":[1,481.6,379.1,2],"B2_15":[1,481.6,367.7,2],"B2_10":[1,481.6,356.1,2],"B2_8":[1,481.5,344.6,1],"B2_0":[1,481.6,333.1,1],"B3_0":[1,484.4,298.7,1],"B3_5":[1,484.4,287.1,1],"B3_10":[1,484.4,275.6,2],"B4r5":[1,433.6,229.4,1],"B4r4":[1,433.6,217.2,1],"B4r2":[1,433.6,204.9,1],"B4r0":[1,433.6,193.5,1],"B4s5":[1,522.0,229.4,1],"B4s4":[1,522.0,217.2,1],"B4s2":[1,522.0,204.9,1],"B4s0":[1,522.0,193.5,1],"D5":[1,488.0,119.3,1],"D0":[1,488.4,107.7,1],"E1rLoose":[4,508.8,738.1,2],"E1rTension":[4,508.8,726.6,2],"E1rOverhang":[4,508.8,715.1,2],"E1rSheared":[4,508.8,703.6,2],"E1rErodible":[4,508.7,692.1,1],"E1rMany":[4,508.8,664.5,2],"E1rSome":[4,508.8,653.0,1],"E1rNone":[4,508.8,641.5,1],"E1sTension":[4,508.8,607.0,2],"E1sToeHeave":[4,508.8,595.5,2],"E1sBulging":[4,508.8,584.0,2],"E1sDeform":[4,508.8,572.5,2],"E1sMajor":[4,508.8,545.0,2],"E1sMinor":[4,508.8,533.4,1],"E1sNone":[4,508.8,521.9,1],"E2planes":[4,526.2,444.9,2],"E2wedges":[4,525.3,433.5,2],"E2topple":[4,528.2,410.4,2],"E2open":[4,528.1,399.0,1],"E2tight":[4,528.2,387.5,1],"E2many":[4,511.6,359.9,2],"E2some":[4,511.6,348.4,1],"E2none":[4,511.6,336.9,1],"Fnone":[4,528.6,276.8,1],"Fweep":[4,529.9,265.3,1],"Fhoriz":[4,529.8,253.8,1],"Gmains":[5,506.1,724.3,1],"Gstorm":[5,506.0,712.8,1],"Htension":[5,508.8,605.6,1],"Hpond":[5,509.4,594.2,1],"HvNone":[5,508.8,582.6,1],"HvSparse":[5,508.8,571.1,1],"HvDense":[5,508.8,559.6,1],"Iheavy":[5,509.4,440.0,2],"Islight":[5,509.4,428.4,1],"Iprev":[5,509.4,417.0,1],"Inone":[5,509.4,405.4,1],"Jcrack":[6,509.4,367.5,2],"Jbulge":[6,509.4,356.0,2],"Jtilt":[6,509.4,344.4,2],"Jsettle":[6,509.4,333.0,2],"Jslide":[6,509.4,321.5,2],"Jloose":[6,509.4,309.9,2],"Jcorr":[6,509.4,298.5,1],"Jseep":[6,509.4,287.0,1],"Jgood":[6,509.4,275.5,1],"Jnone":[6,509.4,264.0,1],"Kocc":[7,508.8,231.1,2],"Kunocc":[7,508.8,219.6,1],"Kroad":[7,508.8,208.1,2],"Krail":[7,508.8,196.6,2],"Kpublic":[7,508.8,185.1,1],"Kpole":[7,508.8,173.6,1],"Kprivate":[7,508.8,162.1,1],"Knone":[7,508.8,150.6,1]};
+  // E1 soil features with no row in the Typical Scoring box still score (assessor practice): Damage to structures 20, Erosion at toe 10, Hummocky ground 10, New excavation/fill 5.
+  // Wraps SD_FORM.score once; the SD record writes the feature name beside a score and circles it (sdExtras).
+  patchE1() { const SDF = this.SD; if (!SDF || SDF._e1x) return; const orig = SDF.score;
+    SDF.E1X = [['E1.sDamage', 20, 'Damage'], ['E1.sErosion', 10, 'Erosion at toe'], ['E1.sHummocky', 10, 'Hummocky ground'], ['E1.sNewExc', 5, 'New excavation/fill']];
+    SDF.score = s => { const r = orig(s); const cb = s?.sd?.cb || {}; const has = id => !!cb[id]; const ex = SDF.E1X.filter(e => has(e[0])); if (!ex.length) return r;
+      const rock = Math.min(55, (has('E1.rLoose') ? 10 : 0) + (has('E1.rTension') ? 10 : 0) + (has('E1.rOverhang') ? 10 : 0) + (has('E1.rSheared') ? 10 : 0) + (has('E1.rErodible') ? 5 : 0) + (has('E1.rMany') ? 10 : has('E1.rSome') ? 5 : 0));
+      const soil = Math.min(80, (has('E1.sTension') ? 20 : 0) + (has('E1.sToeHeave') ? 20 : 0) + (has('E1.sBulging') ? 20 : 0) + (has('E1.sDeform') ? 10 : 0) + ex.reduce((t, e) => t + e[1], 0) + (has('E1.sMajor') ? 10 : has('E1.sMinor') ? 5 : 0));
+      r.auto.E1 = Math.max(rock, soil); if (r.basis) r.basis.E1 = `incl. ${ex.map(e => `${e[2]} ${e[1]}`).join(', ')}`;
+      const ovr = s?.sd?.ovr || {}; let total = 0; SDF.SC_KEYS.forEach(k => { const o = ovr[k]; const v = o !== '' && o != null && isFinite(+o) ? +o : r.auto[k]; r.sections[k] = v; total += v || 0; }); r.total = total; return r; };
+    SDF._e1x = true; }
   sdCircleKeys(s) {
     const SD = this.SD; const sc = SD.score(s); const a = sc.auto; const ovr = s.sd?.ovr || {}; const cb = s.sd?.cb || {}; const has = id => !!cb[id]; const any = (...x) => x.some(has); const out = [];
     const typed = k => ovr[k] !== '' && ovr[k] != null; const ok = k => !/^B/.test(k) || !typed(k); const add = (...k) => out.push(...k);  // ticked items are circled even when a score was typed over; B (from measurements) is not
@@ -4982,10 +5004,22 @@ class Component extends DCLogic {
       if (present.length) { const best = present.reduce((b, c) => SD.KSCORE[c] > SD.KSCORE[b] ? c : b); add(KC[best]); } else if (Object.keys(cb).some(id => id.startsWith('K.') && cb[id])) add('Knone'); }
     return out;
   }
+  // Where the extra E1 soil features go on page 4: a 20 goes beside a free 20 row (as the Guide's worked example writes "Damage" beside Bulging) and that 20 is circled;
+  // a 10 goes beside Surface deformation if that row is free; the rest go on the "Number" heading line with their score written in the score column and circled.
+  e1ExtraMarks(s, font) { const out = { texts: [], circles: [] }; const SDF = this.SD; const cb = s?.sd?.cb || {}; const has = id => !!cb[id]; const ex = (SDF.E1X || []).filter(e => has(e[0])); if (!ex.length) return out;
+    const soilOn = ['E1.sTension', 'E1.sToeHeave', 'E1.sBulging', 'E1.sDeform', 'E1.sMajor', 'E1.sMinor', 'E1.sNone', ...SDF.E1X.map(e => e[0])].some(has); if (!soilOn) return out;
+    const fit = (txt, w, max) => { let sz = max; while (sz > 5 && font.widthOfTextAtSize(txt, sz) > w) sz -= 0.5; return sz; };
+    const rows = { E1sBulging: [397, 'E1.sBulging', 20], E1sToeHeave: [413, 'E1.sToeHeave', 20], E1sTension: [434, 'E1.sTension', 20], E1sDeform: [456, 'E1.sDeform', 10] }; const used = new Set(); const rest = [];
+    ex.forEach(([, v, label]) => { const k = Object.keys(rows).find(r => !used.has(r) && rows[r][2] === v && !has(rows[r][1])); if (!k) { rest.push([label, v]); return; } used.add(k); const c = this.SD_CIRC[k]; const x0 = rows[k][0] + 4, w = 500 - x0;
+      out.texts.push([label, x0, c[2] - 2.6, fit(label, w, 8)]); out.circles.push(k); });
+    if (rest.length) { const txt = rest.map(r => r[0]).join(' + '), v = rest.reduce((t, r) => t + r[1], 0); out.texts.push([txt, 402, 553.4, fit(txt, 96, 8)]); const vs = String(v); out.texts.push([vs, 508.8 - font.widthOfTextAtSize(vs, 9) / 2, 553.4, 9]); out.circles.push([4, 508.8, 556.0, vs.length > 1 ? 2 : 1]); }
+    return out; }
   async sdExtras(doc, PL, s) {
     const ink = (this.props.sdInk ?? 'pencil') === 'pen' ? PL.rgb(0, 0, 0) : PL.rgb(0.42, 0.42, 0.45); const pages = doc.getPages(); const font = await doc.embedFont(PL.StandardFonts.Helvetica);
     // 1. hand-drawn circles around the scores that make up each section total
-    this.sdCircleKeys(s).forEach((k, idx) => { const c = this.SD_CIRC[k]; if (!c) return; const pg = pages[c[0] - 1]; if (!pg) return; const rx = c[3] > 1 ? 9.5 : 7, ry = 6.6;
+    const e1x = this.e1ExtraMarks(s, font); const circKeys = [...this.sdCircleKeys(s), ...e1x.circles];
+    e1x.texts.forEach(([txt, x, y, sz]) => { const pg = pages[3]; if (pg) pg.drawText(txt, { x, y, size: sz, font, color: ink }); });
+    circKeys.forEach((k, idx) => { const c = typeof k === 'string' ? this.SD_CIRC[k] : k; if (!c) return; const pg = pages[c[0] - 1]; if (!pg) return; const rx = c[3] > 1 ? 9.5 : 7, ry = 6.6;
       let seed = (idx + 1) * 9301 + c[0] * 49297; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
       const a0 = -0.9 + rnd() * 0.4, sweep = Math.PI * 2 + 0.45; const pts = []; for (let i = 0; i <= 28; i++) { const t = a0 + sweep * i / 28; const j = 1 + (rnd() - 0.5) * 0.08 + (i > 24 ? 0.07 : 0); pts.push([Math.cos(t) * rx * j, Math.sin(t) * ry * j]); }
       const rot = -0.12; const d = pts.map(([x, y], i) => { const X = x * Math.cos(rot) - y * Math.sin(rot), Y = x * Math.sin(rot) + y * Math.cos(rot); return `${i ? 'L' : 'M'} ${X.toFixed(2)} ${(-Y).toFixed(2)}`; }).join(' ');
@@ -5247,7 +5281,7 @@ class Component extends DCLogic {
       goBack: () => this.setView(v.name === 'slope' ? { name: 'project', sid: null } : { name: 'projects', pid: null }),
       refOpen: !!st.ref && !!this.REF?.[st.ref], closeRef: () => this.setState({ ref: null }), termOpen: !!st.termOpen, openTerm: () => this.setState({ termOpen: true }), closeTerm: () => this.setState({ termOpen: false }), refTitle: '', refNote: '', refCols: [], refRows: [], refGrid: '1fr', refMinW: '100%',
       measOn: false, measModes: [], measFields: [], measDirs: [], secList: [], tbMeas: {}, tbMove: {}, skLgChips: [], skLgHasChips: false,
-      dlgOpen: false, skPrevOpen: false, isNatural: false, natSideOpts: [], structSideOpts: [], e1TypeOpts: [], sdIsE1: false, exKw: [], futKw: [], sheetTabs: [], holdOpen: false, matMulti: false, matDomOpts: [], dlgUnits: [], dlgHasUnits: false, dlgChips: [], dlgFields: [], dlgHasChips: false, lenLines: [], hnList: [], hnMechs: [], hnCats: [], skLegend: [], skLegendHz: [],
+      dlgOpen: false, skPrevOpen: false, isNatural: false, isBridge: false, bridgeInOpts: [], hnBridge: false, hnBridgeHint: '', hzBridge: false, natSideOpts: [], structSideOpts: [], e1TypeOpts: [], sdIsE1: false, exKw: [], futKw: [], sheetTabs: [], holdOpen: false, matMulti: false, matDomOpts: [], dlgUnits: [], dlgHasUnits: false, dlgChips: [], dlgFields: [], dlgHasChips: false, lenLines: [], hnList: [], hnMechs: [], hnCats: [], skLegend: [], skLegendHz: [],
       projects: [], slopes: [], steps: [], navBoxes: [], listOn: false, listAOn: false, listNoteOn: false, listLine: '', listBtn: '', impOn: false, impClassOn: false, impGeomOn: false, impLine: '', impBtn: '', navPrevDis: false, navNextDis: false, navPrevOp: '1', navNextOp: '1', photos: [], sketchImageCss: 'none', sketchImageSrc: '', capSrc: '', sketchHasImage: false, sketchNoImage: true, sketchMore: [], sketchHasMore: false, drawPages: [], drawPageNoteOn: false, tOvrOpts: [], tOvrOn: false, tOvrNoWhy: false, padSaveLabel: 'Save', revHere: [], revHereOn: false, revItems: [], revAboutOpts: [], revOpenAny: false, canMarkChecked: false, checkBlocked: false, chkSketches: [], chkHasSketch: false, chkNoSketch: true, skPrevTitle: '', skPrevW: '100%', skPrevZoomLabel: 'Zoom', sketchMoreNote: '', sketchMoreCamLabel: 'Take photo', stepA: false, stepB: false, stepSketch: false, stepDesc: false, stepPhotos: false, stepRisk: false, stepExport: false, stepCheck: false,
     };
     out.credit = `App design and build © ${new Date().getFullYear()} ${this.props.author ?? 'Davide Casagrande'}. Rating tables reproduced from the TfNSW Guide to Slope Risk Analysis v4 (© Transport for NSW).`;
@@ -5295,11 +5329,13 @@ class Component extends DCLogic {
       out.navBoxes = flat.slice(w0, w0 + 3).map((f, j) => ({ code: f.code, label: f.label, go: () => goF(w0 + j), ...this.pal(w0 + j === fi) }));
       out.navPrev = () => goF(fi - 1); out.navNext = () => goF(fi + 1); out.navPrevDis = fi <= 0; out.navNextDis = fi >= flat.length - 1; out.navPrevOp = fi <= 0 ? '.35' : '1'; out.navNextOp = fi >= flat.length - 1 ? '.35' : '1';
       // bottom buttons: from C2 forward lands on D, from Photos back lands on L4
-      if (step === 3) out.nextStep = () => goF(fi + 1); if (step === 5) { out.prevStep = () => goF(fi - 1); out.prevLabel = '← L4'; } if (step === 3) out.nextLabel = 'D →'; }
+      this._navGo = { next: () => goF(fi + 1), prev: () => goF(fi - 1) }; }
     out.prevStep = () => this.setView({ step: Math.max(0, step - 1) }); out.nextStep = () => step < this.STEPS.length - 1 ? this.setView({ step: step + 1 }) : this.setView({ name: 'project', sid: null });
     out.prevLabel = step === 0 ? 'Slopes' : `← ${this.STEPS[step - 1][1]}`; out.nextLabel = step === this.STEPS.length - 1 ? 'Done' : `${this.STEPS[step + 1][1]} →`;
+    // bottom buttons: from C2 forward lands on D, from Photos back lands on L4
+    if (step === 3) { out.nextStep = this._navGo.next; out.nextLabel = 'D →'; } if (step === 5) { out.prevStep = this._navGo.prev; out.prevLabel = '← L4'; }
     if (step === 0) out.prevStep = () => this.setView({ name: 'project', sid: null });
-    out.stepA = step === 0; out.stepB = step === 1; out.stepSketch = step === 2 || step === 3; out.stepDesc = step === 4; out.stepPhotos = step === 5; out.stepRisk = step === 6; out.stepExport = step === 7; out.stepCheck = step === 8;
+    out.stepA = step === 0; out.stepB = step === 1; out.stepSketch = step === 2 || step === 3; out.stepDesc = step === 4; out.stepPhotos = step === 5; out.stepRisk = step === 6; out.stepCheck = step === 7; out.stepExport = step === 8;
     const fA = (k, l, o) => this.field(A, k, l, { ...o, sec: 'A' }); const fB = (k, l, o) => this.field(B, k, l, { ...o, sec: 'B' });
     const score = this.SD.score(s);
     out.attrScore = score.total;
@@ -5341,6 +5377,8 @@ class Component extends DCLogic {
       out.impGeomOk = () => this.updS(x => { if (x.A.imp) x.A.imp.geomOk = true; }); }
     out.classOpts = ['Cut', 'Embankment', 'Natural', 'Retaining', 'Bridge abutment'].map(o => this.optBtn(o, A.slopeClass === o, () => this.setClass(o)));
     out.aadtNote = A.aadtNote || ''; out.aadtNoteCount = `${(A.aadtNote || '').length} / 100`; out.setAadtNote = e => { const val = e.target.value.slice(0, 100); this.updS(x => { x.A.aadtNote = val; }); };
+    out.isBridge = A.slopeClass === 'Bridge abutment';
+    out.bridgeInOpts = [['cut', 'Cut'], ['fill', 'Fill (embankment)']].map(([o, l]) => this.optBtn(l, A.bridgeIn === o, () => { const c2 = o === 'cut' ? 'Cutting / natural slope' : 'Embankment'; const lost = (s.hazards || []).filter(h => h.bridge && h.mech && h.cat !== c2 && !(T.HAZARD_TYPES[c2] || []).includes(h.mech)); if (lost.length && !confirm(`Change the abutment to ${o}? The hazard type of ${lost.map(h => 'H' + h.n).join(', ')} is not in the ${o === 'cut' ? 'cutting' : 'embankment'} table and will need picking again.`)) return; this.updS(x => { x.A.bridgeIn = o; (x.hazards || []).forEach(h => { if (h.bridge) { const c2 = o === 'cut' ? 'Cutting / natural slope' : 'Embankment'; if (h.cat !== c2) { h.cat = c2; if (!(T.HAZARD_TYPES[c2] || []).includes(h.mech)) h.mech = ''; } } }); }); }));
     out.isRetaining = A.slopeClass === 'Retaining'; const WT = ['Dry stone (unmortared)', 'Mortared masonry / blocks', 'Gabion', 'Crib', 'Concrete', 'Reinforced soil', 'Other'];
     out.wallTypeOpts = WT.map(o => this.optBtn(o, A.wallType === o, () => this.updS(x => { x.A.wallType = x.A.wallType === o ? '' : o; })));
     out.wallTypeOther = A.wallType === 'Other'; out.wallTypeText = A.wallTypeText || ''; out.setWallTypeText = e => { const val = e.target.value; this.updS(x => { x.A.wallTypeText = val; }); };
@@ -5436,11 +5474,12 @@ class Component extends DCLogic {
     out.skPendOn = !!st.skPend; out.skPendMsg = st.skPend ? (st.skPend.what === 'label' ? 'Tap where the label goes' : 'Tap what the arrow points to') : ''; out.skPendCancel = () => this.setState({ skPend: null });
     if (st.skHzPreset && st.skTool === 'sym' && st.skSym === 'hazard') out.skToolHint = `Tap the sketch where H${st.skHzPreset} is.`;
     out.isPlanSketch = sk === 'S01';
-    { const catOf = this.catOf(A); const hnCat = st.hnCat && T.HAZARD_TYPES[st.hnCat] ? st.hnCat : catOf; const hsAll = s.hazards || []; const items = [...(skd.items || []), ...(skd.more || []).flatMap(m => m?.items || [])];
-      out.hnCats = Object.keys(T.HAZARD_TYPES).map(c0 => this.optBtn(c0, c0 === hnCat, () => this.setState({ hnCat: c0 })));
-      out.hnMechs = T.HAZARD_TYPES[hnCat].map(m => { const n = hsAll.filter(h => h.cat === hnCat && h.mech === m).length; return { label: n ? `${m} · ${n}` : `+ ${m}`, cls: n ? 'btn-primary' : 'btn-secondary', pick: () => { if (hsAll.length >= 8) { alert('The SRA Summary holds up to 8 hazards per slope.'); return; } this.updS(x => { x.hazards.push(this.newHz(x.hazards.length + 1, hnCat, m)); }); } }; });
+    { const BR = 'Bridge abutment'; const tab = st.hnCat === BR || (T.HAZARD_TYPES[st.hnCat]) ? st.hnCat : (A.slopeClass === BR ? BR : this.catOf(A)); const isBr = tab === BR; const hnCat = isBr ? this.bridgeCat(A) : tab; const hsAll = s.hazards || []; const items = [...(skd.items || []), ...(skd.more || []).flatMap(m => m?.items || [])];
+      out.hnCats = [...Object.keys(T.HAZARD_TYPES), BR].map(c0 => this.optBtn(c0, c0 === tab, () => this.setState({ hnCat: c0 })));
+      out.hnBridge = isBr; out.hnBridgeHint = A.bridgeIn ? `Hazards from ${A.bridgeIn === 'cut' ? 'Table 1 (cutting)' : 'Table 2 (embankment)'}.` : 'Pick Cut or Fill first: the hazard list follows Table 1 (cutting) or Table 2 (embankment).';
+      out.hnMechs = (isBr && !A.bridgeIn ? [] : T.HAZARD_TYPES[hnCat]).map(m => { const n = hsAll.filter(h => h.cat === hnCat && h.mech === m && !!h.bridge === isBr).length; return { label: n ? `${m} · ${n}` : `+ ${m}`, cls: n ? 'btn-primary' : 'btn-secondary', pick: () => { if (hsAll.length >= 8) { alert('The SRA Summary holds up to 8 hazards per slope.'); return; } this.updS(x => { const nh = this.newHz(x.hazards.length + 1, hnCat, m); if (isBr) nh.bridge = true; x.hazards.push(nh); }); } }; });
       out.hnEmpty = !hsAll.length; out.hzCount = `${hsAll.length} / 8`;
-      out.hnList = hsAll.map((h, i) => { const placed = items.some(x => x.sym === 'hazard' && SK && SK.hzLabel(x.t) === 'H' + h.n); return { code: 'H' + h.n, mech: `${h.mech || 'Type not set'} · ${h.cat}`, text: h.text && h.text !== h.mech ? h.text : '', ph: 'Location / note, e.g. E end above bench', setText: e => { const val = e.target.value; this.updS(x => { x.hazards[i].text = val; }); }, canPlace: st.sketchMode === 'draw', placeLabel: placed ? 'Placed ✓' : 'Place', place: () => this.setState({ skTool: 'sym', skSym: 'hazard', skHzPreset: h.n, skPal: false }), remove: () => { const rated = h.pd != null || h.sVol || h.r || h.cProp; if (!confirm(`Remove H${h.n}${rated ? ' and its risk ratings' : ''}? Hazards after it are renumbered — check the H labels on the sketch.`)) return; this.updS(x => { x.hazards.splice(i, 1); x.hazards.forEach((y, j) => { y.n = j + 1; }); }); this.setState({ hzIdx: 0 }); } }; }); }
+      out.hnList = hsAll.map((h, i) => { const placed = items.some(x => x.sym === 'hazard' && SK && SK.hzLabel(x.t) === 'H' + h.n); return { code: 'H' + h.n, mech: `${h.mech || 'Type not set'} · ${h.bridge ? `Bridge abutment (${h.cat === 'Embankment' ? 'fill' : 'cut'})` : h.cat}`, text: h.text && h.text !== h.mech ? h.text : '', ph: 'Location / note, e.g. E end above bench', setText: e => { const val = e.target.value; this.updS(x => { x.hazards[i].text = val; }); }, canPlace: st.sketchMode === 'draw', placeLabel: placed ? 'Placed ✓' : 'Place', place: () => this.setState({ skTool: 'sym', skSym: 'hazard', skHzPreset: h.n, skPal: false }), remove: () => { const rated = h.pd != null || h.sVol || h.r || h.cProp; if (!confirm(`Remove H${h.n}${rated ? ' and its risk ratings' : ''}? Hazards after it are renumbered — check the H labels on the sketch.`)) return; this.updS(x => { x.hazards.splice(i, 1); x.hazards.forEach((y, j) => { y.n = j + 1; }); }); this.setState({ hzIdx: 0 }); } }; }); }
     if (st.skDlg && SK) { const { it, v: dv } = st.skDlg; const hasN = (this.pad.items || []).some(x => x.sym === 'north'); const northTxt = hasN ? 'the north arrow on this sketch' : 'the top of the sheet (no north arrow yet — place one first if the sketch is not drawn north-up)';
       const setV = k => e => { const val = e.target.value; this.setState(s0 => ({ skDlg: s0.skDlg ? { ...s0.skDlg, v: { ...s0.skDlg.v, [k]: val } } : null })); };
       const fld = (k, label, im, ph) => ({ label, value: dv[k] ?? '', inputMode: im || 'text', placeholder: ph || '', onChange: setV(k), onKey: e => { if (e.key === 'Enter') this.dlgOk(); } });
@@ -5538,7 +5577,9 @@ class Component extends DCLogic {
       const setH = fn => this.updS(x => { fn(x.hazards[hi]); });
       out.hz = { n: h.n, text: h.text || '', T: c.T || '—', V: c.V || '—', failLen: h.failLen ?? '' };
       out.removeHazard = () => { this.updS(x => { x.hazards.splice(hi, 1); x.hazards.forEach((y, i) => { y.n = i + 1; }); }); this.setState({ hzIdx: Math.max(0, hi - 1) }); };
-      out.hzCats = Object.keys(T.HAZARD_TYPES).map(cat => this.optBtn(cat, h.cat === cat, () => setH(y => { y.cat = cat; y.mech = ''; })));
+      out.hzCats = [...Object.keys(T.HAZARD_TYPES).map(cat => this.optBtn(cat, !h.bridge && h.cat === cat, () => setH(y => { y.cat = cat; y.mech = ''; delete y.bridge; }))),
+        this.optBtn('Bridge abutment', !!h.bridge, () => setH(y => { y.bridge = true; const c2 = this.bridgeCat(A); if (y.cat !== c2) { y.cat = c2; y.mech = ''; } }))];
+      out.hzBridge = !!h.bridge;
       out.hzMechs = (T.HAZARD_TYPES[h.cat] || []).map(m => this.optBtn(m, h.mech === m, () => setH(y => { y.mech = m; if (!y.text) y.text = m; })));
       out.setHzText = e => setH(y => { y.text = e.target.value; });
       const hf = (k, label, o = {}) => ({ label, value: h[k] ?? '', placeholder: o.ph || '', inputMode: o.im || 'text', onChange: e => setH(y => { y[k] = e.target.value; }) });
@@ -5657,7 +5698,7 @@ class Component extends DCLogic {
       const open = rv.filter(r => !r.done);
       out.revItems = rv.map(r => { const a = aboutOf(r); return { about: a.label, text: r.text, meta: `${r.by || 'Reviewer'} · ${r.date || ''}${r.done ? ` · fixed ${r.doneDate || ''}` : ''}`, status: r.done ? 'Fixed' : 'Open', tagCls: r.done ? 'tag-outline' : 'tag-accent', toggleLabel: r.done ? 'Reopen' : 'Mark fixed', toggle: () => setDone(r.id, !r.done), goLabel: `Go to ${this.STEPS[a.step][1]}`, go: () => this.setView({ step: a.step }), removeAria: `Delete comment: ${r.text.slice(0, 40)}`, remove: () => { if (confirm('Delete this comment?')) this.upd((nd, np, ns) => { ns.review = (ns.review || []).filter(x => x.id !== r.id); }); } }; });
       out.revCountLabel = open.length ? `${open.length} open comment${open.length > 1 ? 's' : ''}` : (rv.length ? 'All fixed' : 'No comments'); out.revTagCls = open.length ? 'tag-accent' : 'tag-outline'; out.revOpenAny = open.length > 0;
-      out.goCheck = () => this.setView({ step: 8 });
+      out.goCheck = () => this.setView({ step: 7 });
       out.chkSketches = (out.chkSketches || []).map((c, i) => { const f = files[i]; const n = f ? open.filter(r => r.k === f.k && r.n === f.n).length : 0; return { ...c, commentLabel: n ? `Comment · ${n} open` : 'Comment', commentAria: `Add a comment on ${c.code}`, comment: () => this.setState({ revAbout: f ? `${f.k}:${f.n}` : 'gen' }) }; });
       const here = open.filter(r => aboutOf(r).step === step && step !== 8 && step !== 7);
       out.revHere = here.map(r => ({ about: aboutOf(r).label, text: r.text, toggle: () => setDone(r.id, true) })); out.revHereOn = here.length > 0;
