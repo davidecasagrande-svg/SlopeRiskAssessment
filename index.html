@@ -3559,6 +3559,13 @@ textarea.input { min-height: 90px; resize: vertical; }
       <div class="field" style="flex:1"><label>Site number (NNNNNN)</label><input class="sra-input" inputMode="numeric" value="{{ newSiteNo }}" placeholder="e.g. 011986" onChange="{{ setNewSiteNo }}"></div>
       <button class="btn btn-primary" style="min-height:48px" onClick="{{ addSlope }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg>Start slope</button>
     </div>
+    <div class="card blueprint" style="padding:12px;gap:8px">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div class="card-kicker">Slope list · Excel or CSV (optional, once per project)</div>
+      <label class="btn btn-secondary" style="min-height:48px;cursor:pointer;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>{{ listBtn }}<input type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange="{{ importList }}" style="display:none"></label>
+      <sc-if value="{{ listOn }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;line-height:1.45;white-space:pre-wrap">{{ listLine }}</div></sc-if>
+      <div style="font-size:12px;opacity:.7">When a slope number matches the TfNSW Slope ID or the LiDAR ID, its blank boxes in A. Location are filled: LiDAR ID, road no, L or R, links, distances, length, GPS and slope class. The spreadsheet's slope type and comment show as a note to check on site. Columns are matched by header name, so other files work if the headers match.</div>
+    </div>
     <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-top:6px">Today's list · {{ slopeCount }}</div>
     <sc-for list="{{ slopes }}" as="s" hint-placeholder-count="2">
       <div class="card blueprint" style="padding:12px 14px;cursor:pointer;flex-direction:row;align-items:center;gap:12px" onClick="{{ s.open }}">
@@ -3577,12 +3584,15 @@ textarea.input { min-height: 90px; resize: vertical; }
 
 <!-- ===== SLOPE WIZARD ===== -->
 <sc-if value="{{ isSlope }}" hint-placeholder-val="{{ false }}">
-  <div class="sra-scroll" style="display:flex;gap:6px;overflow-x:auto;margin:-4px -14px 14px;padding:4px 14px;scroll-snap-type:x proximity">
-    <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
-      <button onClick="{{ st.go }}" style="flex:none;min-height:48px;padding:0 12px;display:flex;align-items:center;gap:6px;font:inherit;font-size:13px;cursor:pointer;border:1px solid {{ st.border }};background:{{ st.bg }};color:{{ st.fg }};scroll-snap-align:start">
-        <span style="font-family:var(--font-heading);font-weight:600;font-size:14px">{{ st.code }}</span><span>{{ st.label }}</span>
+  <!-- Step bar: three boxes around the current step, arrows go one step back / forward (A → B → C1 → C2 → D … L4 → P → RA → Export → Check) -->
+  <div style="display:flex;gap:6px;align-items:stretch;margin:-4px 0 14px">
+    <button aria-label="Previous step" onClick="{{ navPrev }}" style="flex:none;width:44px;min-height:52px;display:grid;place-items:center;font:inherit;cursor:pointer;border:1px solid var(--color-divider);background:transparent;color:var(--color-text);opacity:{{ navPrevOp }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+    <sc-for list="{{ navBoxes }}" as="st" hint-placeholder-count="3">
+      <button onClick="{{ st.go }}" style="flex:1;min-width:0;min-height:52px;padding:4px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font:inherit;cursor:pointer;border:1px solid {{ st.border }};background:{{ st.bg }};color:{{ st.fg }}">
+        <span style="font-family:var(--font-heading);font-weight:600;font-size:15px;line-height:1.1">{{ st.code }}</span><span style="font-size:11px;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ st.label }}</span>
       </button>
     </sc-for>
+    <button aria-label="Next step" onClick="{{ navNext }}" style="flex:none;width:44px;min-height:52px;display:grid;place-items:center;font:inherit;cursor:pointer;border:1px solid var(--color-divider);background:transparent;color:var(--color-text);opacity:{{ navNextOp }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   </div>
 
   <!-- Reviewer comments open on this step -->
@@ -3601,6 +3611,14 @@ textarea.input { min-height: 90px; resize: vertical; }
   <!-- A. Location -->
   <sc-if value="{{ stepA }}" hint-placeholder-val="{{ false }}">
     <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card blueprint" style="padding:12px;gap:8px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div class="card-kicker">Import · Slope Class Report (Word)</div>
+        <label class="btn btn-secondary" style="min-height:48px;cursor:pointer;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15l3-3 3 3"/></svg>{{ impBtn }}<input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange="{{ importReport }}" style="display:none"></label>
+        <sc-if value="{{ listAOn }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;line-height:1.45;white-space:pre-wrap">{{ listALine }}</div></sc-if>
+        <sc-if value="{{ impOn }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;line-height:1.45;white-space:pre-wrap">{{ impLine }}</div></sc-if>
+        <div style="font-size:12px;opacity:.7">Fills blank boxes only: LiDAR ID, slope class, max slope height, average slope angle and GPS. Description, hazards, comments, AADT and the toe / crest distance are not imported.</div>
+      </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
         <sc-for list="{{ fieldsA1 }}" as="f" hint-placeholder-count="4">
           <div class="field" style="grid-column:{{ f.span }}"><label>{{ f.label }}</label><input class="sra-input" type="{{ f.type }}" inputMode="{{ f.inputMode }}" value="{{ f.value }}" placeholder="{{ f.placeholder }}" onChange="{{ f.onChange }}"></div>
@@ -3615,14 +3633,12 @@ textarea.input { min-height: 90px; resize: vertical; }
             <div class="field"><label>{{ f.label }}</label><input class="sra-input" inputMode="decimal" value="{{ f.value }}" onChange="{{ f.onChange }}"></div>
           </sc-for>
         </div>
-        <table class="table" style="font-size:13px">
-          <thead><tr><th>MGA2020</th><th>Zone</th><th>Easting</th><th>Northing</th><th>RL (AHD)</th></tr></thead>
-          <tbody>
-            <sc-for list="{{ mgaRows }}" as="r" hint-placeholder-count="2">
-              <tr><td style="font-family:var(--font-heading);font-weight:600">{{ r.label }}</td><td>{{ r.zone }}</td><td style="font-variant-numeric:tabular-nums">{{ r.e }}</td><td style="font-variant-numeric:tabular-nums">{{ r.n }}</td><td>{{ r.rl }}</td></tr>
-            </sc-for>
-          </tbody>
-        </table>
+        <div style="font-size:13px">
+          <div style="display:grid;grid-template-columns:1.1fr .7fr 1.3fr 1.4fr 1fr"><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);font-weight:600;opacity:.7;padding:6px 4px;border-bottom:1px solid var(--color-divider)">MGA2020</div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);font-weight:600;opacity:.7;padding:6px 4px;border-bottom:1px solid var(--color-divider)">Zone</div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);font-weight:600;opacity:.7;padding:6px 4px;border-bottom:1px solid var(--color-divider)">Easting</div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);font-weight:600;opacity:.7;padding:6px 4px;border-bottom:1px solid var(--color-divider)">Northing</div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);font-weight:600;opacity:.7;padding:6px 4px;border-bottom:1px solid var(--color-divider)">RL (AHD)</div></div>
+          <sc-for list="{{ mgaRows }}" as="r" hint-placeholder-count="2">
+            <div style="display:grid;grid-template-columns:1.1fr .7fr 1.3fr 1.4fr 1fr;font-variant-numeric:tabular-nums"><div style="padding:8px 4px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);min-width:0;font-family:var(--font-heading);font-weight:600">{{ r.label }}</div><div style="padding:8px 4px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);min-width:0">{{ r.zone }}</div><div style="padding:8px 4px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);min-width:0">{{ r.e }}</div><div style="padding:8px 4px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);min-width:0">{{ r.n }}</div><div style="padding:8px 4px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);min-width:0">{{ r.rl }}</div></div>
+          </sc-for>
+        </div>
         <div style="font-size:12px;opacity:.7">{{ gpsNote }}</div>
       </div>
       <div class="card-kicker">Roadloc</div>
@@ -3664,6 +3680,8 @@ textarea.input { min-height: 90px; resize: vertical; }
         </sc-for>
       </div>
       <div style="font-size:12px;opacity:.75">{{ sightHint }}</div>
+      <sc-if value="{{ listNoteOn }}" hint-placeholder-val="{{ false }}"><div style="border:1px solid var(--color-accent);background:color-mix(in srgb,var(--color-accent) 10%,var(--color-bg));padding:10px 12px;font-size:13px;line-height:1.45;display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="white-space:pre-wrap">{{ listNoteLine }}</span><button class="btn btn-secondary" style="flex:none;min-height:44px" onClick="{{ listNoteOk }}">Checked</button></div></sc-if>
+      <sc-if value="{{ impClassOn }}" hint-placeholder-val="{{ false }}"><div style="border:1px solid var(--color-accent);background:color-mix(in srgb,var(--color-accent) 10%,var(--color-bg));padding:10px 12px;font-size:13px;line-height:1.45;display:flex;justify-content:space-between;align-items:center;gap:10px"><span>{{ impClassLine }}</span><button class="btn btn-secondary" style="flex:none;min-height:44px" onClick="{{ impClassOk }}">Checked</button></div></sc-if>
       <sc-if value="{{ isNatural }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:13px">Natural slope is</span><sc-for list="{{ natSideOpts }}" as="o" hint-placeholder-count="2"><button class="btn {{ o.cls }}" style="min-height:44px" onClick="{{ o.pick }}">{{ o.label }}</button></sc-for></div>
       </sc-if>
@@ -3683,16 +3701,15 @@ textarea.input { min-height: 90px; resize: vertical; }
   <sc-if value="{{ stepB }}" hint-placeholder-val="{{ false }}">
     <div style="display:flex;flex-direction:column;gap:14px">
       <button class="btn btn-secondary" style="min-height:44px;align-self:flex-start;gap:8px" onClick="{{ openTerm }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M3 20 9 8l4 4 3-6 5 14"/></svg>Slope geometry terminology · Figure C-1</button>
-      <table class="table" style="font-size:14px">
-        <thead><tr><th></th><th>Height (m)</th><th>Angle (°)</th></tr></thead>
-        <tbody>
-          <sc-for list="{{ geomRows }}" as="r" hint-placeholder-count="3">
-            <tr><td style="font-family:var(--font-heading);font-weight:600;font-size:15px;white-space:nowrap">{{ r.label }}</td>
-              <td><input class="sra-input" inputMode="decimal" value="{{ r.h }}" onChange="{{ r.setH }}"></td>
-              <td><input class="sra-input" inputMode="decimal" value="{{ r.a }}" onChange="{{ r.setA }}"></td></tr>
-          </sc-for>
-        </tbody>
-      </table>
+      <div style="font-size:14px">
+        <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:0 8px"><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);font-weight:600;opacity:.7;padding:6px 4px;border-bottom:1px solid var(--color-divider)"></div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);font-weight:600;opacity:.7;padding:6px 4px;border-bottom:1px solid var(--color-divider)">Height (m)</div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);font-weight:600;opacity:.7;padding:6px 4px;border-bottom:1px solid var(--color-divider)">Angle (°)</div></div>
+        <sc-for list="{{ geomRows }}" as="r" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:0 8px;align-items:center"><div style="padding:8px 4px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);min-width:0;font-family:var(--font-heading);font-weight:600;font-size:15px">{{ r.label }}</div>
+            <div style="padding:8px 4px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);min-width:0"><input class="sra-input" inputMode="decimal" value="{{ r.h }}" onChange="{{ r.setH }}"></div>
+            <div style="padding:8px 4px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);min-width:0"><input class="sra-input" inputMode="decimal" value="{{ r.a }}" onChange="{{ r.setA }}"></div></div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ impGeomOn }}" hint-placeholder-val="{{ false }}"><div style="border:1px solid var(--color-accent);background:color-mix(in srgb,var(--color-accent) 10%,var(--color-bg));padding:10px 12px;font-size:13px;line-height:1.45;display:flex;justify-content:space-between;align-items:center;gap:10px"><span>{{ impGeomLine }}</span><button class="btn btn-secondary" style="flex:none;min-height:44px" onClick="{{ impGeomOk }}">Checked on site</button></div></sc-if>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
         <sc-for list="{{ fieldsGeom }}" as="f" hint-placeholder-count="6">
           <div class="field"><label>{{ f.label }}</label><input class="sra-input" inputMode="decimal" value="{{ f.value }}" placeholder="{{ f.placeholder }}" onChange="{{ f.onChange }}"></div>
@@ -4258,6 +4275,16 @@ textarea.input { min-height: 90px; resize: vertical; }
             </div>
           </sc-if>
           <div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 70%,transparent)">{{ tHint }}</div>
+          <sc-if value="{{ tNotWall }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--color-divider);padding-top:10px">
+              <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.65">Overwrite T from experience</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ tOvrOpts }}" as="o" hint-placeholder-count="6"><button class="btn {{ o.cls }}" style="min-height:44px;min-width:52px" onClick="{{ o.pick }}">{{ o.label }}</button></sc-for></div>
+              <sc-if value="{{ tOvrOn }}" hint-placeholder-val="{{ false }}">
+                <div class="field"><label>Reason (required · prints in the SRA Summary Comments)</label><input class="sra-input" value="{{ tOvrWhy }}" placeholder="e.g. Regular pedestrian use not reflected in AADT" onChange="{{ setTOvrWhy }}"></div>
+                <sc-if value="{{ tOvrNoWhy }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--color-accent-700)">Add the reason for the overwrite.</div></sc-if>
+              </sc-if>
+            </div>
+          </sc-if>
         </div>
 
         <!-- Vulnerability (derived) -->
@@ -4440,14 +4467,12 @@ textarea.input { min-height: 90px; resize: vertical; }
       </div>
       <div style="font-size:13px;opacity:.8">{{ refNote }}</div>
       <div style="overflow-x:auto;margin:0 -14px;padding:0 14px">
-        <table class="table" style="font-size:11px;min-width:100%">
-          <thead><tr><sc-for list="{{ refCols }}" as="c" hint-placeholder-count="3"><th style="padding:6px 6px;white-space:normal;line-height:1.2">{{ c.c }}</th></sc-for></tr></thead>
-          <tbody>
-            <sc-for list="{{ refRows }}" as="r" hint-placeholder-count="5">
-              <tr><sc-for list="{{ r.cells }}" as="cell" hint-placeholder-count="3"><td style="padding:6px 6px;vertical-align:top;line-height:1.3;white-space:normal;font-family:{{ cell.font }};font-weight:{{ cell.weight }}">{{ cell.c }}</td></sc-for></tr>
-            </sc-for>
-          </tbody>
-        </table>
+        <div style="font-size:11px;min-width:{{ refMinW }}">
+          <div style="display:grid;grid-template-columns:{{ refGrid }};border-bottom:1px solid var(--color-divider)"><sc-for list="{{ refCols }}" as="c" hint-placeholder-count="3"><div style="padding:6px;line-height:1.2;font-family:var(--font-heading);font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;opacity:.75">{{ c.c }}</div></sc-for></div>
+          <sc-for list="{{ refRows }}" as="r" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:{{ refGrid }};border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><sc-for list="{{ r.cells }}" as="cell" hint-placeholder-count="3"><div style="padding:6px;line-height:1.3;min-width:0;overflow-wrap:anywhere;font-family:{{ cell.font }};font-weight:{{ cell.weight }}">{{ cell.c }}</div></sc-for></div>
+          </sc-for>
+        </div>
       </div>
       <div style="font-size:11px;opacity:.6">Abridged from the TfNSW Guide to Slope Risk Analysis v4. Refer to the Guide for the full wording.</div>
     </div>
@@ -4703,14 +4728,15 @@ class Component extends DCLogic {
     const L = wall ? T.wallL(h.wallCond, h.wallDist) : T.likelihoodFrom(h.pd, h.pt);
     const band = T.speedBand(+A?.speed);
     const tv = this.trafficVol(h, A); const tBase = T.tFromVolume(tv.vol);
-    const Tr = wall ? 'T1' : h.tMode === 'manual' ? (h.tManual || null) : T.modifyT(tBase, h.tMode, num(h.failLen), band);
+    const tCalc = wall ? 'T1' : h.tMode === 'manual' ? (h.tManual || null) : T.modifyT(tBase, h.tMode, num(h.failLen), band);
+    const tOvr = !wall && !!h.tOvr; const Tr = tOvr ? h.tOvr : tCalc;  // T overwritten from experience (reason goes to Comments)
     const vel = T.resVel(num(A?.speed), num(h.fallH)); const vm = h.vMode || 'debris';
     const V = wall ? T.wallV(h.wallAng, num(h.wallH)) : vm === 'direct' ? T.vDirect(h.dBlock, vel) : vm === 'people' ? (h.vManual || null) : T.vFrom(h.debris, band);
     const M = T.magnitude(h.r, h.sVol, h.sBlock);
     const H = T.hazardClass(L, M);
     const Cl = T.cLife(V, Tr);
     const ARL = T.arl(L, Cl, h.cProp);
-    return { L, T: Tr, tBase, tv, band, vel, V, M, H, Cl, ARL };
+    return { L, T: Tr, tCalc, tOvr, tBase, tv, band, vel, V, M, H, Cl, ARL };
   }
   trafficVol(h, A) {
     const aadt = +A?.aadt || 0; let P = +A?.lanesP || 0, C = +A?.lanesC || 0;
@@ -4820,7 +4846,8 @@ class Component extends DCLogic {
   newHz(n, cat, mech) { return { n, cat, mech: mech || '', text: '', sVol: null, sBlock: null, r: null, pd: null, pt: null, tMode: 'none', failLen: '', debris: null, cProp: null }; }
   matsOf(s) { const B = s?.B || {}; let m = Array.isArray(B.mats) ? B.mats.filter(Boolean) : (B.matType ? [B.matType] : []); if (B.matType && !m.includes(B.matType)) m = [B.matType, ...m]; if (s?.A?.slopeClass === 'Embankment' && !m.includes('Fill')) m = [...m, 'Fill']; return m; }
   aadtLine(s) { const t = (s?.A?.aadtNote || '').trim(); return t ? 'AADT: ' + t : ''; }
-  commentsOut(s) { return [(s?.comments || '').trim(), this.aadtLine(s)].filter(Boolean).join('\n'); }
+  commentsOut(s) { const tl = (s?.hazards || []).map(h => { const k = this.compute(h, s.A); return k.tOvr ? `Hazard ${h.n}: temporal probability overwritten from ${k.tCalc || '—'} to ${k.T} based on experience${(h.tOvrWhy || '').trim() ? ' – ' + h.tOvrWhy.trim() : ''}.` : ''; }).filter(Boolean);
+    return [(s?.comments || '').trim(), s?.A?.lidarId ? `LiDAR ID: ${s.A.lidarId}` : '', this.aadtLine(s), ...tl].filter(Boolean).join('\n'); }
   holdCheck(s) { const m = this.matsOf({ ...s, A: { ...s.A, slopeClass: '' } }); const txt = `${s.A?.descr || ''} ${s.A?.material || ''}`; const natMat = m.some(x => x === 'Rock' || x === 'Soil') && !m.includes('Fill'); const natTxt = /\b(rock|natural|sandstone|granite|basalt|shale|limestone)/i.test(txt) && !/\bfill/i.test(txt);
     if (!natMat && !natTxt) return ''; const why = []; if (natMat) why.push(`B.1 material is ${m.join(' / ')} with no Fill`); if (natTxt) why.push('the description reads as rock / natural ground'); return `This slope was recorded as natural material: ${why.join(', and ')}. An embankment is built of fill.`; }
   guideClass(A) { const c = A?.slopeClass; if (c === 'Cut') return 'cut'; if (c === 'Embankment') return 'fill'; if (c === 'Natural') return A.natSide ? 'natural slope ' + A.natSide : ''; if (c === 'Retaining') return A.structSide ? 'structure ' + A.structSide : ''; if (c === 'Bridge abutment') return 'bridge abutment'; return ''; }
@@ -4834,20 +4861,21 @@ class Component extends DCLogic {
   FUT_KW = ['realign', 'regrade', 'scale', 'remove vegetation', 'support rock (type)', 'toe support', 'inspection regime', 'monitoring (type)', 'other measure (type)', 'drainage (type)'];
   kwChips(s, field, list) { const parts = (s[field] || '').split(',').map(x => x.trim()).filter(Boolean); return list.map(kw => this.optBtn(kw, parts.some(p => p.toLowerCase() === kw), () => this.updS(x => { const ps = (x[field] || '').split(',').map(y => y.trim()).filter(Boolean); const i = ps.findIndex(p => p.toLowerCase() === kw); if (i >= 0) ps.splice(i, 1); else ps.push(kw); x[field] = ps.join(', '); }))); }
   setClass(o) { const { s } = this.cur(); if (!s) return; if (o === 'Embankment' && s.A.slopeClass !== 'Embankment') { const msg = this.holdCheck(s); if (msg) { this.setState({ hold: { msg, prev: s.A.slopeClass || 'current class' } }); return; } }
-    this.updS(x => { x.A.slopeClass = o; if (o === 'Embankment') { const m = this.matsOf(x); x.B.mats = m; if (!x.B.matType) x.B.matType = m[0]; } }); }
+    this.updS(x => { x.A.slopeClass = o; x.A.classPicked = true; if (o === 'Embankment') { const m = this.matsOf(x); x.B.mats = m; if (!x.B.matType) x.B.matType = m[0]; } }); }
   holdConfirm() { this.updS(x => { x.A.slopeClass = 'Embankment'; const m = this.matsOf(x); x.B.mats = m; if (!x.B.matType) x.B.matType = m[0]; const mt = (x.A.material || '').trim(); if (!/\bfill/i.test(mt)) x.A.material = mt ? `Fill / ${mt}` : 'Fill'; }); this.setState({ hold: null }); }
   matLabel(s) { const B = s?.B || {}, A = s?.A || {}; const nm = x => x === 'Other' ? ((B.matOther || '').trim() || 'Other') : x; const ms = this.matsOf(s); const dom = B.matType && ms.includes(B.matType) ? B.matType : ms[0]; const base = ms.length ? [dom, ...ms.filter(x => x !== dom)].map(nm).join(' / ') : (this.SD ? nm(this.SD.score(s).mat) : ''); let free = (A.material || '').trim(); const known = ms.map(nm).map(x => x.toLowerCase()); free = free.split(/\s*\/\s*/).filter(w => w && !known.includes(w.toLowerCase())).join(' / '); if (!free) return base || ''; if (!base || free.toLowerCase().includes(base.toLowerCase())) return free; return `${base} – ${free}`; }
   mapsUrl(A) { const pts = [[A?.lat1, A?.lon1], [A?.lat2, A?.lon2]].filter(([a, b]) => a !== '' && a != null && b !== '' && b != null && isFinite(+a) && isFinite(+b)).map(([a, b]) => [+a, +b]); if (!pts.length) return ''; const la = pts.reduce((x, p) => x + p[0], 0) / pts.length, lo = pts.reduce((x, p) => x + p[1], 0) / pts.length; return `https://www.google.com/maps/search/?api=1&query=${la.toFixed(5)},${lo.toFixed(5)}`; }
-  padSave(A, sk, hzLines, lgHide, phLines, notes) { const c = this.sheetCanvas(A, sk, hzLines, lgHide, phLines, notes); if (!c) return; const src = c.toDataURL('image/jpeg', 0.85); const pg = this.skPg(); this.updS(x => { this.skPatch(x, sk, pg, { src, drawn: true }); }); this.setState({ sketchMode: 'photo' }); }
+  padSave(A, sk, hzLines, lgHide, phLines, notes) { const c = this.sheetCanvas(A, sk, hzLines, lgHide, phLines, notes); if (!c) return; const src = c.toDataURL('image/jpeg', 0.95); const pg = this.skPg(); this.updS(x => { this.skPatch(x, sk, pg, { src, drawn: true }); }); this.setState({ sketchMode: 'photo' }); }
   sheetCanvas(A, sk, hzLines, lgHide, phLines, notes) {
     const SK = this.SK; if (!SK) return null; const W = 1200, H = 1200; const items = this.pad.items; hzLines = hzLines || []; phLines = phLines || [];
-    const layer = document.createElement('canvas'); layer.width = W; layer.height = H; const lc = layer.getContext('2d'); items.forEach(it => SK.render(lc, it, 1, '#1d1f20'));
+    const Q = 2;  // drawn sheets saved at twice the pad resolution so pencil lines and text stay sharp
+    const layer = document.createElement('canvas'); layer.width = W * Q; layer.height = H * Q; const lc = layer.getContext('2d'); lc.scale(Q, Q); items.forEach(it => SK.render(lc, it, 1, '#1d1f20'));
     const keys = SK.usedSymbols(items, lgHide); const FH = 64; const SH = SK.stripHeight(keys, hzLines, phLines, notes, W);
-    const c = document.createElement('canvas'); c.width = W; c.height = H + FH + SH; const ctx = c.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.lineWidth = 1;
+    const c = document.createElement('canvas'); c.width = W * Q; c.height = (H + FH + SH) * Q; const ctx = c.getContext('2d'); ctx.scale(Q, Q);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H + FH + SH); ctx.lineWidth = 1;
     for (let i = 0; i <= W; i += 20) { ctx.strokeStyle = i % 100 === 0 ? 'rgba(89,128,166,.45)' : 'rgba(89,128,166,.16)'; ctx.beginPath(); ctx.moveTo(i + .5, 0); ctx.lineTo(i + .5, H); ctx.moveTo(0, i + .5); ctx.lineTo(W, i + .5); ctx.stroke(); }
     const fr = this.pad.frame; if (fr && fr.labels.length) SK.sectionFrame(ctx, fr.labels, fr.scale, W, H, '#1d1f20');
-    ctx.drawImage(layer, 0, 0);
+    ctx.drawImage(layer, 0, 0, W, H);
     const sc = this.pad.scale || this.state.scale, mps = sc / 100;
     const nts = sk === 'S01' || sk === 'M01'; const title = { S01: 'PLAN (N.T.S.)', M01: 'MONITORING INSTRUMENT LOCATION PLAN (N.T.S.)', S03: `LONGITUDINAL SECTION 1:${sc}` }[sk] || '';
     ctx.fillStyle = '#1d1f20'; ctx.textBaseline = 'middle'; let x = 20; if (title) { ctx.font = '600 26px sans-serif'; ctx.fillText(title, x, H + 30); const tw = ctx.measureText(title).width; ctx.fillRect(x, H + 47, tw, 2); x += tw + 30; }
@@ -4857,7 +4885,7 @@ class Component extends DCLogic {
     return c;
   }
   sketchKey() { const stp = this.state.view.step; const sub = this.state.skSub || {}; return stp === 2 ? (sub[2] || 'S01') : (sub[3] || 'S02'); }
-  async shrink(file, max = 1400) { const url = URL.createObjectURL(file); const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); return c.toDataURL('image/jpeg', 0.82); }
+  async shrink(file, max = 1400, q = 0.82) { const url = URL.createObjectURL(file); const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); return c.toDataURL('image/jpeg', q); }
 
   // ---------- export ----------
   fileList(s) {
@@ -4984,12 +5012,16 @@ class Component extends DCLogic {
     if (!window.PDFLib) throw new Error('PDF library not loaded');
     const cbs = { ...(s.sd?.cb || {}) }; const sk = s.sketches || {};
     // Drawn in the app → the app writes on the form page (sketch in the box, hazard notes, P(d)/P(t) table). Photographed paper sketch → the photo IS the page, nothing written on it.
-    const drawn = k => sk[k]?.drawn === true || (sk[k]?.drawn === undefined && Array.isArray(sk[k]?.items) && sk[k].items.length > 0);
+    // Drawn in the app = saved by the drawing pad (drawn: true). Older records have no flag: count them as drawn only if the image is an app sheet (1200 or 2400 px wide), so a photo of a paper sketch always gets the full page.
+    const imgW = src => new Promise(r => { const i = new Image(); i.onload = () => r(i.naturalWidth); i.onerror = () => r(0); i.src = src; });
+    const isDrawn = async d => !!d?.src && (d.drawn === true || (d.drawn === undefined && (d.items || []).length > 0 && [1200, 2400].includes(await imgW(d.src))));
+    const dFlag = { S01: await isDrawn(sk.S01), S02: await isDrawn(sk.S02) }; const drawn = k => dFlag[k];
     const vals = this.sdVals(s), ink = { ink: this.props.sdInk ?? 'pencil' };
     const bytes = await this.SD.build(window.PDFLib, vals, cbs, { S01: drawn('S01') ? sk.S01?.src : undefined, S02: drawn('S02') ? sk.S02?.src : undefined, S01notes: [sk.S01?.notes, (s.hazards || []).length ? 'Hazards: ' + this.hzLines(s).join('; ') : ''].filter(Boolean).join('\n'), S02notes: sk.S02?.notes }, ink);
     // Sketch pages: each sketch photo IS the page. S01 replaces page 2, S02 replaces page 3; extra sheets follow as full pages.
     const extra = k => (Array.isArray(sk[k]?.more) ? sk[k].more : []).filter(m => m?.src);
-    const pages = k => [sk[k]?.src ? { src: sk[k].src, drawn: drawn(k) } : null, ...extra(k).map(m => ({ src: m.src, drawn: m.drawn === true || (m.drawn === undefined && (m.items || []).length > 0) }))].filter(Boolean);
+    const xFlag = {}; for (const k of ['S01', 'S02']) { xFlag[k] = []; for (const m of extra(k)) xFlag[k].push(await isDrawn(m)); }
+    const pages = k => [sk[k]?.src ? { src: sk[k].src, drawn: drawn(k) } : null, ...extra(k).map((m, i) => ({ src: m.src, drawn: xFlag[k][i] }))].filter(Boolean);
     const PL = window.PDFLib; const doc = await PL.PDFDocument.load(bytes); await this.sdExtras(doc, PL, s);
     if (!pages('S01').length && !pages('S02').length) return new Blob([await doc.save()], { type: 'application/pdf' });
     // Draws a photo into the area from y0 up to the top of the page (fit, centred; a sideways photo is turned to the portrait page).
@@ -5021,14 +5053,14 @@ class Component extends DCLogic {
     const g1 = this.G?.toMGA2020(+A.lat1, +A.lon1), g2 = this.G?.toMGA2020(+A.lat2, +A.lon2);
     const c = {
       B2: A.siteNo || '', H2: dmy(s.checkedDate || A.date), B3: dmy(A.date), E3: A.completedBy || '', H3: s.checkedBy || '',
-      C5: this.guideClass(A), E5: num(B.overallH), G5: num(B.overallA), I5: this.guideMat(s), D6: this.descrOut(s),
+      C5: this.guideClass(A), E5: num(B.overallH), G5: num(B.overallA), I5: this.guideMat(s), D6: (A.descr || '').trim(),
       C9: A.roadNo || '', E9: A.startLink || '', G9: A.finishLink || '', I9: A.side || '',
       C10: A.cwayCode || '', E10: num(A.startDist), G10: num(A.finishDist), I10: num(A.length),
       E11: num(A.lat1), G11: num(A.lon1), I11: num(A.ele1), E12: num(A.lat2), G12: num(A.lon2), I12: num(A.ele2),
       E13: g1 ? g1.zone : '', G13: g1 ? Math.round(g1.easting * 10) / 10 : '', I13: g1 ? Math.round(g1.northing * 10) / 10 : '',
       E14: g2 ? g2.zone : '', G14: g2 ? Math.round(g2.easting * 10) / 10 : '', I14: g2 ? Math.round(g2.northing * 10) / 10 : '',
       B15: this.planRefOut(A), G15: num(A.planChainage), I15: A.planSide || '', B16: (() => { const loc = (A.locality || '').trim(); const u = this.mapsUrl(A); return loc && u ? { f: `HYPERLINK("${u}","${loc.replace(/"/g, '""')}")`, v: loc } : loc; })(),
-      D18: num(A.aadt), F18: num(A.year), I18: num(A.speed), D19: num(A.lanesP ?? A.lanes), F19: num(A.lanesC ?? ''), I19: A.sight || '',
+      D18: num(A.aadt), F18: String(A.year ?? '').trim() ? num(A.year) : 'N/A', I18: num(A.speed), D19: num(A.lanesP ?? A.lanes), F19: num(A.lanesC ?? ''), I19: A.sight || '',
       F40: 'Page 2  Slope Identification No. ' + (A.siteNo || ''), F89: 'Page 3  Slope Identification No. ' + (A.siteNo || ''),
       B49: s.existingMeasures || '', B50: s.furtherInv || '', E50: s.remedial || '',
       A52: 'Comments:' + (this.commentsOut(s) ? '\n' + this.commentsOut(s) : ''),
@@ -5056,6 +5088,116 @@ class Component extends DCLogic {
     for (let i = 0; i < 20; i++) { const m = media[i]; c['A' + (69 + i)] = m ? m[0] : ''; c['B' + (69 + i)] = m ? m[1] : ''; }
     return c;
   }
+  // SRA Summary template tweaks (applied once, in memory):
+  //  - filled-in cells not bold, except Slope Identification No. (B2) and ARL (row 39)
+  //  - only the 3 printed pages show: columns after I and rows after 104 hidden (page layout view shows no empty pages around them)
+  patchSummaryTpl() {
+    const X = window.SRA_XLSX; if (!X || X._patched) return; const P = X.parts;
+    let st = P['xl/styles.xml'], sh = P['xl/worksheets/sheet1.xml'];
+    const fontsM = st.match(/<fonts count="(\d+)"([^>]*)>([\s\S]*?)<\/fonts>/); const fonts = fontsM[3].match(/<font>[\s\S]*?<\/font>|<font\/>/g);
+    const xfsM = st.match(/<cellXfs count="(\d+)">([\s\S]*?)<\/cellXfs>/); const xfs = xfsM[2].match(/<xf [^>]*?(?:\/>|>[\s\S]*?<\/xf>)/g);
+    const newFont = {}, newXf = {};
+    const plain = sIdx => { if (newXf[sIdx] != null) return newXf[sIdx]; const xf = xfs[sIdx]; const fid = +(xf.match(/fontId="(\d+)"/) || [0, 0])[1];
+      if (!/<b\/>/.test(fonts[fid])) return (newXf[sIdx] = sIdx);
+      if (newFont[fid] == null) { fonts.push(fonts[fid].replace('<b/>', '')); newFont[fid] = fonts.length - 1; }
+      xfs.push(xf.replace(/fontId="\d+"/, `fontId="${newFont[fid]}"`).replace(/applyFont="0"/, 'applyFont="1"')); return (newXf[sIdx] = xfs.length - 1); };
+    const refs = []; 'BCDEFGHI'.split('').forEach(c => [22, 24, 25, 26, 27, 30, 31, 32, 33, 36, 37, 38, 43, 44, 45, 46, 94, 95, 96, 97, 100, 101, 102, 104].forEach(r => refs.push(c + r)));
+    ['H2', 'B3', 'E3', 'H3', 'C5', 'E5', 'G5', 'I5', 'D6', 'C9', 'E9', 'G9', 'I9', 'C10', 'E10', 'G10', 'I10', 'E11', 'G11', 'I11', 'E12', 'G12', 'I12', 'E13', 'G13', 'I13', 'E14', 'G14', 'I14', 'B15', 'G15', 'I15', 'B16', 'D18', 'F18', 'I18', 'D19', 'F19', 'I19', 'B49', 'B50', 'E50', 'A52'].forEach(r => refs.push(r));
+    for (let r = 56; r <= 65; r++) ['A', 'B', 'D', 'H'].forEach(c => refs.push(c + r)); for (let r = 69; r <= 88; r++) ['A', 'B'].forEach(c => refs.push(c + r));
+    refs.forEach(ref => { sh = sh.replace(new RegExp('(<c r="' + ref + '"[^>]*? s=")(\\d+)(")'), (a, x, n, z) => x + plain(+n) + z); });
+    st = st.replace(fontsM[0], `<fonts count="${fonts.length}"${fontsM[2]}>${fonts.join('')}</fonts>`).replace(xfsM[0], `<cellXfs count="${xfs.length}">${xfs.join('')}</cellXfs>`);
+    sh = sh.replace(/(<col min="10" max="16384"[^>]*?)\/>/, '$1 hidden="1"/>');
+    sh = sh.replace(/<row r="(\d+)"([^>]*)>/g, (a, r, rest) => /ht="/.test(rest) ? a : `<row r="${r}"${rest} ht="12.75" customHeight="1">`);
+    if (!/<row r="91"/.test(sh)) sh = sh.replace(/(<row r="92")/, '<row r="91" ht="12.75" customHeight="1"/>$1');
+    sh = sh.replace(/<sheetFormatPr([^>]*?)\/>/, (a, x) => /zeroHeight/.test(x) ? a : `<sheetFormatPr${x} zeroHeight="1"/>`);
+    P['xl/styles.xml'] = st; P['xl/worksheets/sheet1.xml'] = sh; X._patched = true;
+  }
+  // ---- Import: slope list (Excel .xlsx or CSV), once per project. Columns matched by header name. ----
+  LIST_COLS = { lidarId: ['lidar id', 'lidar'], tfnswId: ['tfnsw slope id', 'slope id', 'slope identification no', 'slope identification number', 'site no', 'site number', 'slope no'],
+    type: ['slope type', 'slope class'], side: ['left or right side', 'l or r', 'side', 'left right'], roadNo: ['road number', 'road no', 'road'],
+    startLink: ['start link no', 'start link'], finishLink: ['finish link no', 'finish link', 'end link no', 'end link'], startDist: ['start distance km', 'start distance', 'start dist'],
+    finishDist: ['finish distance km', 'finish distance', 'end distance km', 'end distance'], length: ['length m', 'length'], cwayCode: ['cway code', 'carriageway code'],
+    lat1: ['start lat', 'start latitude'], lon1: ['start long', 'start longitude', 'start lon'], lat2: ['end lat', 'end latitude', 'finish lat', 'finish latitude'], lon2: ['end long', 'end longitude', 'end lon', 'finish long', 'finish longitude'],
+    ele1: ['start elevation', 'start rl'], ele2: ['end elevation', 'end rl'], comment: ['comment', 'comments', 'notes', 'note'] };
+  async readTable(f) {
+    const dec = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#10;/g, ' ').replace(/&amp;/g, '&');
+    if (/\.csv$/i.test(f.name) || /csv/.test(f.type)) {
+      const txt = (await f.text()).replace(/^﻿/, ''); const first = txt.split(/\r?\n/)[0] || ''; const dl = [',', ';', '\t'].sort((a, b) => first.split(b).length - first.split(a).length)[0];
+      const rows = []; let row = [], cell = '', q = false;
+      for (let i = 0; i < txt.length; i++) { const ch = txt[i];
+        if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+        else if (ch === '"') q = true; else if (ch === dl) { row.push(cell); cell = ''; } else if (ch === '\n' || ch === '\r') { if (ch === '\r' && txt[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; } else cell += ch; }
+      if (cell || row.length) { row.push(cell); rows.push(row); } return rows;
+    }
+    const JSZip = await this.loadZipLib(); const z = await JSZip.loadAsync(f);
+    const ssx = await z.file('xl/sharedStrings.xml')?.async('string'); const ss = ssx ? (ssx.match(/<si>[\s\S]*?<\/si>/g) || []).map(si => (si.match(/<t[^>]*>[^<]*<\/t>/g) || []).map(t => dec(t.replace(/<[^>]+>/g, ''))).join('')) : [];
+    const names = Object.keys(z.files).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a, b) => +a.match(/\d+/)[0] - +b.match(/\d+/)[0]); if (!names.length) throw new Error('no worksheet found');
+    const xml = await z.file(names[0]).async('string'); const col = L => L.split('').reduce((a, c) => a * 26 + c.charCodeAt(0) - 64, 0) - 1;
+    return (xml.match(/<row[ >][\s\S]*?<\/row>/g) || []).map(r => { const out = []; (r.match(/<c r="[A-Z]+\d+"[^>]*?(?:\/>|>[\s\S]*?<\/c>)/g) || []).forEach(c => {
+      const L = c.match(/<c r="([A-Z]+)/)[1], t = (c.match(/ t="(\w+)"/) || [])[1], v = (c.match(/<v>([\s\S]*?)<\/v>/) || [])[1];
+      out[col(L)] = t === 's' ? ss[+v] ?? '' : t === 'inlineStr' ? dec((c.match(/<t[^>]*>([^<]*)<\/t>/) || [])[1] || '') : dec(v ?? ''); }); return Array.from(out, x => x ?? ''); });
+  }
+  listMatch(sl, list) { const n = v => String(v ?? '').replace(/\D/g, '').replace(/^0+/, ''); const id = n(sl?.A?.siteNo), li = n(sl?.A?.lidarId); if (!list?.rows) return null;
+    return list.rows.find(r => id && n(r.tfnswId) === id) || list.rows.find(r => (id && n(r.lidarId) === id) || (li && n(r.lidarId) === li)) || null; }
+  applyListRow(x, row, file) {
+    const A = x.A, B = x.B || (x.B = {}); const done = [], kept = []; const blank = v => v == null || String(v).trim() === '';
+    const v = k => { const t = String(row[k] ?? '').trim(); return /^(-+|n\/?a)$/i.test(t) ? '' : t; };
+    const set = (k, label, force) => { const val = v(k); if (!val) return false; if (blank(A[k]) || force) { if (String(A[k] ?? '') !== val) { A[k] = val; done.push(label); } return true; } if (String(A[k]) !== val) kept.push(label); return false; };
+    set('lidarId', 'LiDAR ID'); set('roadNo', 'road no'); set('startLink', 'start link'); set('finishLink', 'finish link'); set('startDist', 'start distance'); set('finishDist', 'finish distance'); set('length', 'length'); set('cwayCode', 'cway code');
+    const sd = v('side').toUpperCase().slice(0, 1); if (sd === 'L' || sd === 'R') { if (!A.sidePicked) { if (A.side !== sd) { A.side = sd; done.push('L or R'); } } else if (A.side !== sd) kept.push('L or R'); }
+    const fromWord = A.gpsSrc === 'word'; let g = false; ['lat1', 'lon1', 'lat2', 'lon2'].forEach(k => { const b4 = done.length; set(k, k, fromWord); if (done.length > b4) { done.pop(); g = true; } }); if (g) { done.push('GPS'); A.gpsSrc = 'list'; }
+    set('ele1', 'start elevation'); set('ele2', 'end elevation');
+    const type = v('type'), mt = this.mapSlopeType(type);
+    if (type && mt.cls) { if (!A.slopeClass || (!A.classPicked && A.classSrc !== 'list')) { A.classSrc = 'list'; if (A.slopeClass !== mt.cls) { A.slopeClass = mt.cls; if (mt.cls === 'Embankment') { const mm = this.matsOf(x); B.mats = mm; if (!B.matType) B.matType = mm[0]; } } if (mt.nat && !A.natSide) A.natSide = mt.nat; if (mt.struct && !A.structSide) A.structSide = mt.struct; done.push(`slope class (${mt.cls})`); } else if (A.slopeClass !== mt.cls) kept.push('slope class'); }
+    const n = t => String(t ?? '').replace(/\D/g, '').replace(/^0+/, ''); const byLidar = !!v('lidarId') && n(A.siteNo) === n(v('lidarId')) && n(A.siteNo) !== n(v('tfnswId'));
+    A.listImp = { file, type, comment: v('comment'), tfnswId: v('tfnswId'), byLidar, done, kept: [...new Set(kept)], ok: false };
+  }
+  async importList(e) {
+    const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
+    try {
+      const raw = (await this.readTable(f)).map(r => r.map(c => String(c ?? '').trim())); const norm = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      const C = this.LIST_COLS; const hi = raw.findIndex(r => r.some(c => C.lidarId.includes(norm(c)) || C.tfnswId.includes(norm(c)))); if (hi < 0) throw new Error('no header row with "LiDAR ID" or "TfNSW Slope ID" was found');
+      const head = raw[hi]; const map = {}, used = [], unused = [];
+      head.forEach((h, i) => { const k = Object.keys(C).find(key => C[key].includes(norm(h))); if (k && map[k] == null) { map[k] = i; used.push(h); } else if (h) unused.push(h); });
+      const rows = raw.slice(hi + 1).map(r => { const o = {}; Object.entries(map).forEach(([k, i]) => { o[k] = r[i] ?? ''; }); return o; }).filter(o => String(o.lidarId || '').trim() || /\d/.test(String(o.tfnswId || '')));
+      let matched = 0;
+      this.upd((d, pp) => { if (!pp) return; pp.slopeList = { file: f.name, at: new Date().toISOString().slice(0, 10), used, unused, rows };
+        pp.slopes.forEach(sl => { const r = this.listMatch(sl, pp.slopeList); if (r) { this.applyListRow(sl, r, f.name); matched++; } }); });
+      this.setState({ listMsg: `${matched} existing slope${matched === 1 ? '' : 's'} matched and filled.` });
+    } catch (err) { console.error(err); alert('Could not read the slope list: ' + err.message); }
+  }
+  // ---- Import: TfNSW Slope Class Report (.docx, one per slope) ----
+  // Reads the report's label | value table cells. Fills blank boxes only. LiDAR ID is kept separate from the slope ID (shown under it; printed in Excel Comments).
+  mapSlopeType(t) { const x = String(t || '').toLowerCase(); const side = /below/.test(x) ? 'below' : /above/.test(x) ? 'above' : '';
+    if (/bridge/.test(x)) return { cls: 'Bridge abutment' }; if (/retain|wall|structure/.test(x)) return { cls: 'Retaining', struct: side };
+    if (/fill|embank/.test(x)) return { cls: 'Embankment' }; if (/\bcut/.test(x)) return { cls: 'Cut' }; if (/natural|slope above|slope below/.test(x)) return { cls: 'Natural', nat: side }; return {}; }
+  async importReport(e) {
+    const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
+    try {
+      const JSZip = await this.loadZipLib(); const z = await JSZip.loadAsync(f); const xml = await z.file('word/document.xml')?.async('string'); if (!xml) throw new Error('this is not a Word (.docx) file');
+      const dec = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+      const cellText = c => (c.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || []).map(pp => (pp.match(/<w:t(?: [^>]*)?>[^<]*<\/w:t>/g) || []).map(t => dec(t.replace(/<[^>]+>/g, ''))).join('')).join(' ').replace(/\s+/g, ' ').trim();
+      const rows = (xml.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || []).map(r => (r.match(/<w:tc[ >][\s\S]*?<\/w:tc>/g) || []).map(cellText));
+      const kv = {}; rows.forEach(r => { for (let i = 0; i + 1 < r.length; i += 2) { const k = r[i].toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); if (k && !(k in kv)) kv[k] = r[i + 1]; } });
+      const get = re => { const k = Object.keys(kv).find(x => re.test(x)); return k ? kv[k] : ''; };
+      const num = v => { const m = String(v || '').replace(',', '.').match(/-?\d+(\.\d+)?/); return m ? m[0] : ''; };
+      const lidar = (get(/^lidar id$/) || (f.name.match(/lidar ?id[_ -]*(\d+)/i) || [])[1] || '').trim();
+      const type = get(/^slope type$/), H = num(get(/^max(imum)? slope height/)), ang = num(get(/^av(erage)? slope angle/));
+      const gps = { lat1: num(get(/^start latitude/)), lon1: num(get(/^start longitude/)), lat2: num(get(/^end latitude/)), lon2: num(get(/^end longitude/)) };
+      if (!lidar && !type && !H && !ang && !gps.lat1) throw new Error('no Slope Class Report table was found in this file');
+      const done = [], kept = [];
+      this.updS(x => { const A = x.A, B = x.B; const blank = v => v == null || String(v).trim() === '';
+        const set = (o, k, v, label) => { if (v === '' || v == null) return; if (blank(o[k])) { o[k] = v; done.push(label); } else if (String(o[k]) !== String(v)) kept.push(label); };
+        if (lidar) { if (blank(A.lidarId)) { A.lidarId = lidar; done.push('LiDAR ID ' + lidar); } else if (A.lidarId !== lidar) kept.push('LiDAR ID'); }
+        const mt = this.mapSlopeType(type);
+        if (type && mt.cls) { if (!A.slopeClass || (!A.classPicked && !A.classSrc)) {  // new slopes start on 'Cut' by default: the report replaces it until someone taps a class (a class from the slope list wins)
+            A.slopeClass = mt.cls; A.classSrc = 'word'; if (mt.nat && !A.natSide) A.natSide = mt.nat; if (mt.struct && !A.structSide) A.structSide = mt.struct;
+            if (mt.cls === 'Embankment') { const mm = this.matsOf(x); B.mats = mm; if (!B.matType) B.matType = mm[0]; } done.push(`slope class (${mt.cls})`); } else if (A.slopeClass !== mt.cls) kept.push('slope class'); }
+        set(B, 'overallH', H, 'max slope height'); set(B, 'overallA', ang, 'average slope angle');
+        let g = 0; ['lat1', 'lon1', 'lat2', 'lon2'].forEach(k => { if (gps[k] && blank(A[k])) { A[k] = gps[k]; g++; } else if (gps[k] && String(A[k]) !== gps[k]) kept.push('GPS ' + k); }); if (g) { done.push('GPS'); if (!A.gpsSrc) A.gpsSrc = 'word'; }
+        A.imp = { file: f.name, lidar, type, H, ang, classOk: false, geomOk: false, done: [...done], kept: [...new Set(kept)] }; });
+    } catch (err) { console.error(err); alert('Could not read the report: ' + err.message); }
+  }
   async loadZipLib() {
     let JSZip = window.JSZip;
     if (!JSZip) { await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); }); JSZip = window.JSZip; }
@@ -5067,7 +5209,7 @@ class Component extends DCLogic {
     this.setState({ xlsxBusy: true });
     try {
       const JSZip = await this.loadZipLib();
-      const blob = await window.SRA_SUMMARY.build(JSZip, this.summaryCells(s, p), s.A.siteNo);
+      const blob = await (this.patchSummaryTpl(), window.SRA_SUMMARY).build(JSZip, this.summaryCells(s, p), s.A.siteNo);
       const date = (s.A.date || '').replace(/-/g, '') || this.today();
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = this.T.fileName(s.A.siteNo || '000000', date, 'RA.xlsx'); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     } catch (e) { console.error(e); alert('Could not build SRA Summary: ' + e.message); }
@@ -5082,7 +5224,7 @@ class Component extends DCLogic {
       if (!JSZip) throw new Error('ZIP library unavailable offline — connect once to cache it.');
       const zip = new JSZip(); const site = s.A.siteNo || '000000'; const date = (s.A.date || '').replace(/-/g, '') || this.today(); const fn = suf => this.T.fileName(site, date, suf);
       zip.file(fn('RA.csv'), this.raCsv(s));
-      zip.file(fn('RA.xlsx'), await window.SRA_SUMMARY.build(JSZip, this.summaryCells(s, this.cur().p), s.A.siteNo));
+      zip.file(fn('RA.xlsx'), await (this.patchSummaryTpl(), window.SRA_SUMMARY).build(JSZip, this.summaryCells(s, this.cur().p), s.A.siteNo));
       zip.file(fn('SD.pdf'), await this.sdPdf(s));
       const b64 = u => u.split(',')[1];
       (s.photos || []).forEach((p, i) => { if (p.src) zip.file(fn(`P${String(i + 1).padStart(2, '0')}.JPG`), b64(p.src), { base64: true }); });
@@ -5103,15 +5245,15 @@ class Component extends DCLogic {
       toggleTheme: () => { const t = dark ? 'light' : 'dark'; localStorage.setItem(this.KEY + ':theme', t); this.setState({ theme: t }); },
       isProjects: v.name === 'projects', isProject: v.name === 'project', isSlope: v.name === 'slope', showBack: v.name !== 'projects',
       goBack: () => this.setView(v.name === 'slope' ? { name: 'project', sid: null } : { name: 'projects', pid: null }),
-      refOpen: !!st.ref && !!this.REF?.[st.ref], closeRef: () => this.setState({ ref: null }), termOpen: !!st.termOpen, openTerm: () => this.setState({ termOpen: true }), closeTerm: () => this.setState({ termOpen: false }), refTitle: '', refNote: '', refCols: [], refRows: [],
+      refOpen: !!st.ref && !!this.REF?.[st.ref], closeRef: () => this.setState({ ref: null }), termOpen: !!st.termOpen, openTerm: () => this.setState({ termOpen: true }), closeTerm: () => this.setState({ termOpen: false }), refTitle: '', refNote: '', refCols: [], refRows: [], refGrid: '1fr', refMinW: '100%',
       measOn: false, measModes: [], measFields: [], measDirs: [], secList: [], tbMeas: {}, tbMove: {}, skLgChips: [], skLgHasChips: false,
       dlgOpen: false, skPrevOpen: false, isNatural: false, natSideOpts: [], structSideOpts: [], e1TypeOpts: [], sdIsE1: false, exKw: [], futKw: [], sheetTabs: [], holdOpen: false, matMulti: false, matDomOpts: [], dlgUnits: [], dlgHasUnits: false, dlgChips: [], dlgFields: [], dlgHasChips: false, lenLines: [], hnList: [], hnMechs: [], hnCats: [], skLegend: [], skLegendHz: [],
-      projects: [], slopes: [], steps: [], photos: [], sketchImageCss: 'none', sketchImageSrc: '', capSrc: '', sketchHasImage: false, sketchNoImage: true, sketchMore: [], sketchHasMore: false, drawPages: [], drawPageNoteOn: false, padSaveLabel: 'Save', revHere: [], revHereOn: false, revItems: [], revAboutOpts: [], revOpenAny: false, canMarkChecked: false, checkBlocked: false, chkSketches: [], chkHasSketch: false, chkNoSketch: true, skPrevTitle: '', skPrevW: '100%', skPrevZoomLabel: 'Zoom', sketchMoreNote: '', sketchMoreCamLabel: 'Take photo', stepA: false, stepB: false, stepSketch: false, stepDesc: false, stepPhotos: false, stepRisk: false, stepExport: false, stepCheck: false,
+      projects: [], slopes: [], steps: [], navBoxes: [], listOn: false, listAOn: false, listNoteOn: false, listLine: '', listBtn: '', impOn: false, impClassOn: false, impGeomOn: false, impLine: '', impBtn: '', navPrevDis: false, navNextDis: false, navPrevOp: '1', navNextOp: '1', photos: [], sketchImageCss: 'none', sketchImageSrc: '', capSrc: '', sketchHasImage: false, sketchNoImage: true, sketchMore: [], sketchHasMore: false, drawPages: [], drawPageNoteOn: false, tOvrOpts: [], tOvrOn: false, tOvrNoWhy: false, padSaveLabel: 'Save', revHere: [], revHereOn: false, revItems: [], revAboutOpts: [], revOpenAny: false, canMarkChecked: false, checkBlocked: false, chkSketches: [], chkHasSketch: false, chkNoSketch: true, skPrevTitle: '', skPrevW: '100%', skPrevZoomLabel: 'Zoom', sketchMoreNote: '', sketchMoreCamLabel: 'Take photo', stepA: false, stepB: false, stepSketch: false, stepDesc: false, stepPhotos: false, stepRisk: false, stepExport: false, stepCheck: false,
     };
     out.credit = `App design and build © ${new Date().getFullYear()} ${this.props.author ?? 'Davide Casagrande'}. Rating tables reproduced from the TfNSW Guide to Slope Risk Analysis v4 (© Transport for NSW).`;
     if (!d) return { ...out, headerTitle: 'Slope Risk Assessment', headerSub: 'Loading…' };
     const refData = this.REF?.[st.ref];
-    if (refData) { out.refTitle = refData.title; out.refNote = refData.note || ''; out.refCols = refData.cols.map(c => ({ c })); out.refRows = refData.rows.map(r => ({ cells: r.map((c, i) => ({ c, font: i === 0 ? 'var(--font-heading)' : 'inherit', weight: i === 0 ? 600 : 400 })) })); }
+    if (refData) { out.refTitle = refData.title; out.refNote = refData.note || ''; out.refCols = refData.cols.map(c => ({ c })); const nC = refData.cols.length; out.refGrid = `minmax(56px,.6fr) repeat(${Math.max(1, nC - 1)}, minmax(84px,1fr))`; out.refMinW = nC > 4 ? `${56 + (nC - 1) * 84}px` : '100%'; out.refRows = refData.rows.map(r => ({ cells: r.map((c, i) => ({ c, font: i === 0 ? 'var(--font-heading)' : 'inherit', weight: i === 0 ? 600 : 400 })) })); }
     out.stopProp = e => e.stopPropagation();
     const openRef = key => () => this.setState({ ref: key });
 
@@ -5130,7 +5272,10 @@ class Component extends DCLogic {
     if (!p) { this.setView({ name: 'projects' }); return out; }
     out.headerTitle = p.title; out.headerSub = [p.road, p.assessor].filter(Boolean).join(' · ');
     out.newSiteNo = st.newSiteNo; out.setNewSiteNo = e => this.setState({ newSiteNo: e.target.value.replace(/\D/g, '').slice(0, 6) });
-    out.addSlope = () => { const site = (st.newSiteNo || '').padStart(6, '0'); if (!st.newSiteNo) return; const id = 's' + Date.now(); this.upd(nd => { nd.projects.find(x => x.id === p.id).slopes.push({ id, A: { siteNo: site, date: new Date().toISOString().slice(0, 10), completedBy: p.assessor || '', side: 'L', slopeClass: 'Cut' }, B: {}, desc: {}, hazards: [], sketches: {}, photos: [], existingMeasures: '', remedial: '', comments: '', attrScore: '' }); }); this.setState({ newSiteNo: '', hzIdx: 0 }); this.setView({ name: 'slope', sid: id, step: 0 }); };
+    { const L = p.slopeList; out.listOn = !!L; out.listBtn = L ? 'Replace slope list' : 'Import slope list (.xlsx or .csv)'; out.importList = e => this.importList(e);
+      out.listLine = L ? `${L.file} · ${L.rows.length} slopes (imported ${L.at})${st.listMsg ? `\n${st.listMsg}` : ''}\nColumns used: ${L.used.join(', ') || '—'}${L.unused.length ? `\nNot used: ${L.unused.join(', ')}` : ''}` : ''; }
+    out.addSlope = () => { const site = (st.newSiteNo || '').padStart(6, '0'); if (!st.newSiteNo) return; const id = 's' + Date.now(); this.upd(nd => { nd.projects.find(x => x.id === p.id).slopes.push({ id, A: { siteNo: site, date: new Date().toISOString().slice(0, 10), completedBy: p.assessor || '', side: 'L', slopeClass: 'Cut' }, B: {}, desc: {}, hazards: [], sketches: {}, photos: [], existingMeasures: '', remedial: '', comments: '', attrScore: '' });
+      const pp = nd.projects.find(x => x.id === p.id), ns = pp.slopes[pp.slopes.length - 1], lr = this.listMatch(ns, pp.slopeList); if (lr) this.applyListRow(ns, lr, pp.slopeList.file); }); this.setState({ newSiteNo: '', hzIdx: 0 }); this.setView({ name: 'slope', sid: id, step: 0 }); };
     out.slopeCount = `${p.slopes.length} slope${p.slopes.length === 1 ? '' : 's'}`;
     out.slopes = p.slopes.map(sl => { const a = this.slopeArl(sl); const done = !!sl.checkedDate; return { site: sl.A.siteNo, desc: sl.A.descr || (sl.hazards.length ? `${sl.hazards.length} hazard${sl.hazards.length > 1 ? 's' : ''}` : 'Not started'), meta: [sl.A.date, sl.A.locality, sl.A.side ? `${sl.A.side} side` : ''].filter(Boolean).join(' · '), arl: a || '—', arlBg: a ? this.ARL_BG[a] : 'transparent', arlFg: a ? this.ARL_FG[a] : 'inherit', status: done ? 'Checked' : a ? 'Rated' : 'Draft', statusTag: done ? 'tag-accent' : a ? 'tag-outline' : 'tag-neutral', open: () => { this.setState({ hzIdx: 0 }); this.setView({ name: 'slope', sid: sl.id, step: 0 }); } }; });
     if (v.name === 'project') return out;
@@ -5138,8 +5283,19 @@ class Component extends DCLogic {
     // ---- slope wizard ----
     if (!s) { this.setView({ name: 'project', sid: null }); return out; }
     const step = v.step; const A = s.A, B = s.B;
-    out.headerTitle = `Slope ${A.siteNo}`; out.headerSub = `${this.STEPS[step][1]} · ${p.title}`;
+    out.headerTitle = `Slope ${A.siteNo}`; out.headerSub = `${A.lidarId ? `LiDAR ID ${A.lidarId} · ` : ''}${this.STEPS[step][1]} · ${p.title}`;
     out.steps = this.STEPS.map(([code, label], i) => ({ code, label, go: () => this.setView({ step: i }), ...this.pal(i === step) }));
+    // One flat sequence for the step bar: D–L is split into its sections so the arrows walk C2 → D → E1 … L4 → Photos.
+    { const sdK = [...this.SD.SECTIONS.map(x => x.k), 'L4']; const curTab = sdK.includes(st.sdTab) ? st.sdTab : 'D';
+      const short = k => (this.SD.SECTIONS.find(x => x.k === k)?.title || 'L4. Comments').replace(/^[A-Z]\d?\.\s*/, '');
+      const flat = []; this.STEPS.forEach(([code, label], i) => { if (i === 4) sdK.forEach(k => flat.push({ code: k, label: short(k), step: 4, tab: k })); else flat.push({ code, label, step: i }); });
+      const fi = Math.max(0, flat.findIndex(f => f.step === step && (step !== 4 || f.tab === curTab)));
+      const goF = j => { const f = flat[j]; if (!f) return; if (f.tab) this.setState({ sdTab: f.tab }); this.setView({ step: f.step }); };
+      const w0 = Math.max(0, Math.min(flat.length - 3, fi - 1));
+      out.navBoxes = flat.slice(w0, w0 + 3).map((f, j) => ({ code: f.code, label: f.label, go: () => goF(w0 + j), ...this.pal(w0 + j === fi) }));
+      out.navPrev = () => goF(fi - 1); out.navNext = () => goF(fi + 1); out.navPrevDis = fi <= 0; out.navNextDis = fi >= flat.length - 1; out.navPrevOp = fi <= 0 ? '.35' : '1'; out.navNextOp = fi >= flat.length - 1 ? '.35' : '1';
+      // bottom buttons: from C2 forward lands on D, from Photos back lands on L4
+      if (step === 3) out.nextStep = () => goF(fi + 1); if (step === 5) { out.prevStep = () => goF(fi - 1); out.prevLabel = '← L4'; } if (step === 3) out.nextLabel = 'D →'; }
     out.prevStep = () => this.setView({ step: Math.max(0, step - 1) }); out.nextStep = () => step < this.STEPS.length - 1 ? this.setView({ step: step + 1 }) : this.setView({ name: 'project', sid: null });
     out.prevLabel = step === 0 ? 'Slopes' : `← ${this.STEPS[step - 1][1]}`; out.nextLabel = step === this.STEPS.length - 1 ? 'Done' : `${this.STEPS[step + 1][1]} →`;
     if (step === 0) out.prevStep = () => this.setView({ name: 'project', sid: null });
@@ -5149,7 +5305,7 @@ class Component extends DCLogic {
     out.attrScore = score.total;
 
     // A
-    out.fieldsA1 = [fA('siteNo', 'Slope identification no.', { im: 'numeric' }), fA('date', 'Inspection date', { type: 'date' }), fA('time', 'Time', { type: 'time' }), fA('completedBy', 'Completed by'), fA('weather', 'Weather conditions', { span: '1 / -1', ph: 'On and preceding inspection day' }), fA('descr', 'Description', { span: '1 / -1', ph: 'e.g. Rock cutting, sandstone over claystone' }), fA('material', 'Material', { span: '1 / -1', ph: 'e.g. Sandstone / residual clay' })];
+    out.fieldsA1 = [fA('siteNo', 'Slope identification no.', { im: 'numeric' }), fA('date', 'Inspection date', { type: 'date' }), fA('time', 'Time', { type: 'time' }), fA('completedBy', 'Completed by'), fA('weather', 'Weather conditions', { span: '1 / -1', ph: 'On and preceding inspection day' }), fA('descr', 'Description', { span: '1 / -1', ph: 'Brief; include previous site no. if known, e.g. Old Site No 1234, fractured rock face in sandstone' }), fA('material', 'Material', { span: '1 / -1', ph: 'e.g. Sandstone / residual clay' })];
     out.fieldsGps = [fA('lat1', 'Start latitude'), fA('lon1', 'Start longitude'), fA('ele1', 'Start elevation'), fA('lat2', 'End latitude'), fA('lon2', 'End longitude'), fA('ele2', 'End elevation')];
     out.gpsLabel = st.gps === 'busy' ? 'Locating…' : st.gps === 'end' ? 'Phone GPS → end point' : 'Phone GPS → start point';
     out.gpsNote = st.gps === 'err' ? 'Phone GPS unavailable (denied or no fix) — enter decimal degrees to 5 places; MGA2020 still converts.' : 'Uses the phone GPS. Stand at the start, tap once; walk to the end, tap again. MGA2020 grid is converted automatically.';
@@ -5174,6 +5330,15 @@ class Component extends DCLogic {
     out.isNatural = A.slopeClass === 'Natural'; out.natSideOpts = [['above', '↑ Above the road'], ['below', '↓ Below the road']].map(([o, l]) => this.optBtn(l, A.natSide === o, () => this.updS(x => { x.A.natSide = o; })));
     out.structSideOpts = [['above', '↑ Above the road'], ['below', '↓ Below the road']].map(([o, l]) => this.optBtn(l, A.structSide === o, () => this.updS(x => { x.A.structSide = o; })));
     { const T12 = { 50: 45, 60: 60, 70: 80, 80: 100, 90: 120, 100: '150 or 175', 110: 210, 120: 250, 130: 300 }; const sp = +A.speed; out.sightHint = sp && T12[sp] ? `Table 12 · design stopping sight distance at ${sp} km/h is ${T12[sp]} m. Answer Y if debris on the road would be visible from at least this distance.` : 'Table 12 · enter the speed limit to see the design stopping sight distance (e.g. 60 km/h 60 m, 100 km/h 150 or 175 m).'; }
+    { const li = A.listImp; out.listAOn = !!li; out.listALine = li ? `Slope list (${li.file}): ${li.done.length ? 'filled ' + li.done.join(', ') : 'nothing new to fill'}${li.kept.length ? `\nKept your values for: ${li.kept.join(', ')}` : ''}` : '';
+      out.listNoteOn = !!(li && !li.ok && (li.type || li.comment || li.byLidar)); out.listNoteOk = () => this.updS(x => { if (x.A.listImp) x.A.listImp.ok = true; });
+      out.listNoteLine = li ? [li.type ? `Spreadsheet says: ${li.type}. Check the slope class on site.` : '', li.comment ? `Spreadsheet comment: ${li.comment}` : '', li.byLidar ? 'This slope number is the LiDAR ID, not a TfNSW Slope ID. The Excel prints the slope number as the Slope Identification No.; change it when TfNSW gives one.' : ''].filter(Boolean).join('\n') : ''; }
+    { const im = A.imp; out.impOn = !!im; out.impBtn = im ? 'Import another Slope Class Report' : 'Choose Slope Class Report (.docx)'; out.importReport = e => this.importReport(e);
+      out.impLine = im ? `${im.file}\nFilled: ${im.done.length ? im.done.join(', ') : 'nothing (boxes already filled)'}${im.kept.length ? `\nKept your values for: ${im.kept.join(', ')}` : ''}` : '';
+      out.impClassOn = !!(im && im.type && !im.classOk); out.impClassLine = im ? `Slope Class Report says: ${im.type}. Check the slope class on site.` : '';
+      out.impClassOk = () => this.updS(x => { if (x.A.imp) x.A.imp.classOk = true; });
+      out.impGeomOn = !!(im && (im.H || im.ang) && !im.geomOk); out.impGeomLine = im ? `From the Slope Class Report: max slope height ${im.H || '—'} m, average slope angle ${im.ang || '—'}°. Check both values during the site inspection.` : '';
+      out.impGeomOk = () => this.updS(x => { if (x.A.imp) x.A.imp.geomOk = true; }); }
     out.classOpts = ['Cut', 'Embankment', 'Natural', 'Retaining', 'Bridge abutment'].map(o => this.optBtn(o, A.slopeClass === o, () => this.setClass(o)));
     out.aadtNote = A.aadtNote || ''; out.aadtNoteCount = `${(A.aadtNote || '').length} / 100`; out.setAadtNote = e => { const val = e.target.value.slice(0, 100); this.updS(x => { x.A.aadtNote = val; }); };
     out.isRetaining = A.slopeClass === 'Retaining'; const WT = ['Dry stone (unmortared)', 'Mortared masonry / blocks', 'Gabion', 'Crib', 'Concrete', 'Reinforced soil', 'Other'];
@@ -5183,7 +5348,7 @@ class Component extends DCLogic {
     const liveDone = (s.hazards || []).filter(x => x.special === 'wall').length; out.wallLiveStatus = liveDone ? `Done on ${liveDone} hazard${liveDone > 1 ? 's' : ''}.` : 'Not set on any hazard yet.';
     out.holdOpen = !!st.hold; out.holdMsg = st.hold?.msg || ''; out.holdPrev = st.hold?.prev || ''; out.holdCancel = () => this.setState({ hold: null }); out.holdOk = () => this.holdConfirm();
     // side L/R appended to road fields
-    out.fieldsRoad.push({ label: 'L or R', value: A.side || '', placeholder: 'L / R', inputMode: 'text', onChange: e => this.updS(x => { x.A.side = e.target.value.toUpperCase().slice(0, 1); }) }, fA('cwayCode', 'Cway code'), fA('planRef', 'Plan reference no.'), fA('planDwg', 'Plan drawing no.'), fA('planSheet', 'Plan sheet no.'), fA('planDate', 'Plan date'), fA('planSource', 'Plan source'), fA('planChainage', 'Plan start chainage', { im: 'decimal' }), fA('planCutFill', 'Plan cut/fill no'), { label: 'Plan L or R', value: A.planSide || '', placeholder: 'L / R', inputMode: 'text', onChange: e => this.updS(x => { x.A.planSide = e.target.value.toUpperCase().slice(0, 1); }) });
+    out.fieldsRoad.push({ label: 'L or R', value: A.side || '', placeholder: 'L / R', inputMode: 'text', onChange: e => this.updS(x => { x.A.side = e.target.value.toUpperCase().slice(0, 1); x.A.sidePicked = true; }) }, fA('cwayCode', 'Cway code'), fA('planRef', 'Plan reference no.'), fA('planDwg', 'Plan drawing no.'), fA('planSheet', 'Plan sheet no.'), fA('planDate', 'Plan date'), fA('planSource', 'Plan source'), fA('planChainage', 'Plan start chainage', { im: 'decimal' }), fA('planCutFill', 'Plan cut/fill no'), { label: 'Plan L or R', value: A.planSide || '', placeholder: 'L / R', inputMode: 'text', onChange: e => this.updS(x => { x.A.planSide = e.target.value.toUpperCase().slice(0, 1); }) });
 
     const sdv = s.sd || {};
     const updSd = fn => this.updS(x => { x.sd = x.sd || {}; ['cb', 't', 'k', 'j', 'ovr'].forEach(k => { x.sd[k] = x.sd[k] || {}; }); fn(x.sd, x); });
@@ -5219,7 +5384,7 @@ class Component extends DCLogic {
     out.sketchModes = [['photo', 'Photograph paper sketch'], ['draw', 'Draw in app']].map(([m, label]) => ({ label, pick: () => this.setState({ sketchMode: m }), bg: st.sketchMode === m ? 'var(--color-accent)' : 'transparent', fg: st.sketchMode === m ? 'var(--color-bg)' : 'var(--color-text)' }));
     out.sketchIsPhoto = st.sketchMode === 'photo'; out.sketchIsDraw = st.sketchMode === 'draw';
     out.sketchHasImage = !!skd.src; out.sketchNoImage = !skd.src; out.sketchImageCss = skd.src ? `url("${skd.src}")` : 'none'; out.sketchImageSrc = skd.src || '';
-    out.onSketchPhoto = async e => { const f = e.target.files?.[0]; if (!f) return; const src = await this.shrink(f, 1800); this.updS(x => { x.sketches[sk] = { ...(x.sketches[sk] || {}), src, drawn: false }; }); };
+    out.onSketchPhoto = async e => { const f = e.target.files?.[0]; if (!f) return; const src = await this.shrink(f, 3000, 0.92); this.updS(x => { x.sketches[sk] = { ...(x.sketches[sk] || {}), src, drawn: false }; }); };
     { const more = Array.isArray(skd.more) ? skd.more : []; const d8 = (A.date || '').replace(/-/g, '') || this.today();
       out.sketchMoreCamLabel = skd.src ? 'Take another photo (next sheet)' : 'Take photo';
       out.sketchMoreNote = skd.src ? `Plan too big for one sheet, or more sections? Add extra sheets. Sketch files are numbered in one run as the Guide requires (${sk === 'M01' ? 'M01, M02, M03…' : 'S01, S02, S03… — plan sheets first, then cross sections, then longitudinal'}), so later sheets renumber automatically when you add sheets before them.` : 'Several figures? Attach them all at once — the first becomes sheet 1, the rest extra sheets.';
@@ -5227,7 +5392,7 @@ class Component extends DCLogic {
       out.sketchMore = more.map((m, i) => !m?.src ? null : ({ css: `url("${m.src}")`, src: m.src, label: `Sheet ${i + 2}`, file: T.fileName(A.siteNo || '000000', d8, this.sheetNo(s, sk, i + 2) + '.JPG'), caption: m.caption || '', removeLabel: `Remove sheet ${i + 2} (${this.sheetNo(s, sk, i + 2)})`,
         setCaption: e => { const val = e.target.value; this.updS(x => { const cur = x.sketches[sk] || {}; const mm = [...(cur.more || [])]; if (mm[i]) mm[i] = { ...mm[i], caption: val }; x.sketches[sk] = { ...cur, more: mm }; }); },
         remove: () => { if (!confirm(`Remove sheet ${i + 2} (${this.sheetNo(s, sk, i + 2)})? Later sketch numbers will close up.`)) return; this.updS(x => { const cur = x.sketches[sk] || {}; const mm = [...(cur.more || [])]; mm.splice(i, 1); x.sketches[sk] = { ...cur, more: mm }; }); } })).filter(Boolean);
-      out.onSketchMore = async e => { const files = [...(e.target.files || [])]; e.target.value = ''; if (!files.length) return; const srcs = []; for (const f of files) srcs.push(await this.shrink(f, 1800));
+      out.onSketchMore = async e => { const files = [...(e.target.files || [])]; e.target.value = ''; if (!files.length) return; const srcs = []; for (const f of files) srcs.push(await this.shrink(f, 3000, 0.92));
         this.updS(x => { const cur = { ...(x.sketches[sk] || {}) }; const mm = [...(cur.more || [])]; srcs.forEach(src => { if (!cur.src) { cur.src = src; cur.drawn = false; } else mm.push({ src, caption: '' }); }); cur.more = mm; x.sketches[sk] = cur; }); }; }
     out.sketchNotes = skd.notes || ''; out.sketchPage = sk === 'S01' ? 'page 2' : 'page 3'; out.sketchNotesLabel = sk === 'S01' || sk === 'S02' ? `Notes (printed under the sketch on SD ${sk === 'S01' ? 'page 2' : 'page 3'})` : 'Notes (printed in the strip below the drawing)'; out.setSketchNotes = e => { const val = e.target.value; this.updS(x => { x.sketches[sk] = { ...(x.sketches[sk] || {}), notes: val }; }); };
     out.sketchCaption = skd.caption || ''; out.setSketchCaption = e => this.updS(x => { x.sketches[sk] = { ...(x.sketches[sk] || {}), caption: e.target.value }; });
@@ -5422,7 +5587,8 @@ class Component extends DCLogic {
         if (tv.P) work.push(`Prescribed: ${fmt(tv.dv)} ÷ ${tv.P} lane${tv.P > 1 ? 's' : ''} = ${fmt(tv.dv / tv.P)} per lane`);
         if (tv.C) work.push(`Counter: ${fmt(tv.dv)} ÷ ${tv.C} lane${tv.C > 1 ? 's' : ''} = ${fmt(tv.dv / tv.C)} per lane`);
         work.push(tv.sel.length ? `${tv.sel.length} affected lane${tv.sel.length > 1 ? 's' : ''}: ${tv.sel.map(id => fmt(tv.lanes.find(l => l.id === id).vol)).join(' + ')} = ${fmt(tv.vol)} veh/lane/day → ${c.tBase}` : `No lanes selected: average ${fmt(tv.vol)} veh/lane/day → ${c.tBase}`);
-        if (c.T && c.T !== c.tBase) work.push(`Modified by Table ${h.tMode === 'rockfall' ? '13 (direct impact)' : '14 (length traversed)'} → ${c.T}`);
+        if (c.tCalc && c.tCalc !== c.tBase) work.push(`Modified by Table ${h.tMode === 'rockfall' ? '13 (direct impact)' : '14 (length traversed)'} → ${c.tCalc}`);
+        if (c.tOvr) work.push(`Overwritten from experience → ${c.T}`);
       }
       out.tWork = work.map(t => ({ t }));
       const bands = [['T5', 29.54], ['T4', 19.09], ['T3', 19.67], ['T2', 16.56], ['T1', 15.14]];
@@ -5431,7 +5597,9 @@ class Component extends DCLogic {
       out.tTicks = [['30', 29.54], ['270', 48.63], ['2 600', 68.3], ['17 500', 84.86]].map(([label, x]) => ({ label, left: x + '%' }));
       out.tManualOpts = T.T11_DEF.map(([code, p, def]) => ({ label: code, hint: `${p} · ${def}`, pick: () => setH(y => { y.tManual = code; }), ...this.pal(h.tManual === code) }));
       out.setFailLen = e => setH(y => { y.failLen = e.target.value; });
-      out.tHint = wall ? 'T1 — required for all drystone wall failures (special case).' : c.T ? `${c.T} — ${T.T_HINTS[c.T]}` : '';
+      out.tHint = wall ? 'T1 — required for all drystone wall failures (special case).' : c.T ? `${c.T}${c.tOvr ? ` (overwritten from experience; calculated ${c.tCalc || '—'})` : ''} — ${T.T_HINTS[c.T]}` : '';
+      out.tOvrOpts = ['Calculated', 'T1', 'T2', 'T3', 'T4', 'T5'].map(o => this.optBtn(o, o === 'Calculated' ? !h.tOvr : h.tOvr === o, () => setH(y => { if (o === 'Calculated') { delete y.tOvr; } else y.tOvr = o; })));
+      out.tOvrOn = !wall && !!h.tOvr; out.tOvrWhy = h.tOvrWhy || ''; out.setTOvrWhy = e => { const v = e.target.value; setH(y => { y.tOvrWhy = v; }); }; out.tOvrNoWhy = !!h.tOvr && !(h.tOvrWhy || '').trim();
       // V
       const vm = h.vMode || 'debris';
       out.vModes = [['debris', 'Debris met on road · T18–20'], ['direct', 'Direct impact · single block · T21–22'], ['people', 'People in open / buildings · T17']].map(([m, label]) => this.optBtn(label, vm === m, () => setH(y => { y.vMode = m; if (m === 'direct' && (!y.tMode || y.tMode === 'none')) y.tMode = 'rockfall'; if (m === 'people') y.tMode = 'manual'; if (m === 'debris' && (y.tMode === 'rockfall' || y.tMode === 'manual')) y.tMode = 'none'; })));
@@ -5452,7 +5620,7 @@ class Component extends DCLogic {
     out.slopeArl = sArl || '—'; out.slopeArlBg = sArl ? this.ARL_BG[sArl] : 'var(--color-surface)'; out.slopeArlFg = sArl ? this.ARL_FG[sArl] : 'inherit';
     out.slopeArlNote = sArl ? (sArl === 'ARL1' || sArl === 'ARL2' ? 'Higher-risk site: 100% audit and SRMP required (Asset Mgmt guideline).' : `${hs.length} hazard${hs.length === 1 ? '' : 's'} assessed`) : 'No hazards rated yet';
     out.hazardRows = hs.map(x => { const k = this.compute(x, A); const dash = v => v || '—'; return { n: x.n, type: x.text || x.mech || '—', ARL: dash(k.ARL), arlBg: k.ARL ? this.ARL_BG[k.ARL] : 'transparent', arlFg: k.ARL ? this.ARL_FG[k.ARL] : 'inherit', codes: [['S', dash(x.sVol || x.sBlock)], ['R', dash(x.r)], ['L', dash(k.L)], ['T', dash(k.T)], ['V', dash(k.V)], ['M', dash(k.M)], ['H', dash(k.H)], ['C', dash(k.Cl || x.cProp)]].map(([kk, vv]) => ({ k: kk, v: vv })) }; });
-    const missing = []; if (!A.siteNo) missing.push('site no'); if (!A.aadt && !(A.aadtNote || '').trim()) missing.push('AADT or AADT source note'); if (A.slopeClass === 'Retaining' && /^(Dry stone|Mortared)/.test(A.wallType || '') && !(s.hazards || []).some(x => x.special === 'wall')) missing.push('live-loading check (masonry wall)'); if (!A.lat1) missing.push('GPS start'); if (A.slopeClass === 'Natural' && !A.natSide) missing.push('natural slope above / below'); if (A.slopeClass === 'Retaining' && !A.structSide) missing.push('structure above / below'); if (!this.guideMat(s)) missing.push('material rock / soil'); if (!(A.length || s.B?.lengthCovered)) missing.push('site length'); if (!(A.roadNo && A.startLink && A.startDist !== '' && A.startDist != null)) missing.push('ROADLOC (road no, start link, start distance)'); if (!this.lanesOf(A)) missing.push('no. of lanes'); if (!A.speed) missing.push('speed limit'); if (!A.sight) missing.push('sight distance Y/N'); if ((s.photos || []).filter(p => /\b(end|start|finish)\b/i.test(p.caption || '')).length < 2) missing.push('photos from both ends (captions with start / finish / end)'); if (!s.sketches?.S01?.src) missing.push('plan sketch'); if (!s.sketches?.S02?.src) missing.push('cross-section sketch'); if (!s.photos?.length) missing.push('photos'); hs.forEach(x => { const k = this.compute(x, A); if (!k.ARL) missing.push(`hazard ${x.n} ratings`); }); if (!hs.length) missing.push('at least one hazard');
+    const missing = []; if (!A.siteNo) missing.push('site no'); if (!A.aadt && !(A.aadtNote || '').trim()) missing.push('AADT or AADT source note'); if (A.slopeClass === 'Retaining' && /^(Dry stone|Mortared)/.test(A.wallType || '') && !(s.hazards || []).some(x => x.special === 'wall')) missing.push('live-loading check (masonry wall)'); if (!A.lat1) missing.push('GPS start'); if (A.slopeClass === 'Natural' && !A.natSide) missing.push('natural slope above / below'); if (A.slopeClass === 'Retaining' && !A.structSide) missing.push('structure above / below'); if (!this.guideMat(s)) missing.push('material rock / soil'); if (!(A.length || s.B?.lengthCovered)) missing.push('site length'); if (!(A.roadNo && A.startLink && A.startDist !== '' && A.startDist != null)) missing.push('ROADLOC (road no, start link, start distance)'); if (!this.lanesOf(A)) missing.push('no. of lanes'); if (!A.speed) missing.push('speed limit'); if (!A.sight) missing.push('sight distance Y/N'); if ((s.photos || []).filter(p => /\b(end|start|finish)\b/i.test(p.caption || '')).length < 2) missing.push('photos from both ends (captions with start / finish / end)'); if (!s.sketches?.S01?.src) missing.push('plan sketch'); if (!s.sketches?.S02?.src) missing.push('cross-section sketch'); if (!s.photos?.length) missing.push('photos'); hs.forEach(x => { const k = this.compute(x, A); if (!k.ARL) missing.push(`hazard ${x.n} ratings`); if (k.tOvr && !(x.tOvrWhy || '').trim()) missing.push(`hazard ${x.n} reason for T overwrite`); }); if (!hs.length) missing.push('at least one hazard');
     out.hasMissing = missing.length > 0; out.missingList = missing.join(', ');
     out.reportRows = (s.reports || []).map((r, i) => ({ n: i + 1, fields: [['author', 'Author', 'Name(s)', 'auto'], ['org', 'Organisation', '', 'auto'], ['title', 'Title', 'Report title', '1 / -1'], ['ref', 'File / Reference No.', 'e.g. NNNNNN_YYYYMMDD_SD.pdf', '1 / -1']].map(([k, label, placeholder, span]) => ({ label, placeholder, span, value: r[k] || '', onChange: e => this.updS(x => { x.reports[i][k] = e.target.value; }) })), remove: () => this.updS(x => { x.reports.splice(i, 1); }) }));
     out.noReports = !(s.reports || []).length; out.canAddReport = (s.reports || []).length < 10;
