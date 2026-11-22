@@ -4953,11 +4953,13 @@ class Component extends DCLogic {
       lenCovered: B.lengthCovered, shoulder: B.shoulder, fallZone: B.fallZone, triD: B.triD, triA: B.triA, triB: B.triB, triG: B.triG, triH: B.triH, rfA: B.a, rfW: B.w, rfD: B.d, rfLH: this.lhOf(B),
       aboveA: B.aboveA, aboveD: B.aboveD, belowA: B.belowA, belowD: B.belowD, resAbove: B.boundaryAbove, resBelow: B.boundaryBelow,
       comments: this.commentsOut(s), total: this.sdTotal(s), 'I.weather': sd.t?.['I.weather'] || A.weather || '' });
-    const r = A.slopeClass === 'Embankment' || A.slopeClass === 'Bridge abutment' ? 'E' : 'C';
+    const r = A.slopeClass === 'Embankment' || (A.slopeClass === 'Bridge abutment' && A.bridgeIn !== 'cut') ? 'E' : 'C';  // bridge abutment follows Cut / Fill
     Object.assign(v, { [`g${r}_oh`]: B.overallH, [`g${r}_oa`]: B.overallA, [`g${r}_bh`]: B.batterH, [`g${r}_ba`]: B.batterA, [`g${r}_bw`]: B.benchW, [`g${r}_bwa`]: B.benchA });
     SD.SC_KEYS.forEach(k => { const val = sc.sections[k]; v['sc' + k] = val ?? ''; v['sum_' + k] = val ?? ''; });
     SD.JROWS.forEach(([k]) => { v[`j_${k}_L`] = sd.j?.[k]?.L; v[`j_${k}_H`] = sd.j?.[k]?.H; });
-    SD.KROWS.forEach(([k]) => { const x = sd.k?.[k] || {}; v[`k_${k}_a`] = x.a; v[`k_${k}_b`] = x.b; v[`k_${k}_n`] = x.n; });
+    // K rows level with the Typical Scoring box (y < 285) with a comment: the score and "(comment)" are written together in the column by sdExtras
+    SD.KROWS.forEach(([k, , y]) => { const x = sd.k?.[k] || {}; v[`k_${k}_a`] = x.a; v[`k_${k}_b`] = x.b; v[`k_${k}_n`] = x.n;
+      if (String(x.c || '').trim() && y < 285) v[`k_${k}_${this.kCol(x)}`] = ''; });
     const pw = p => p == null ? '' : `1x10^${-Math.round(-Math.log10(p))}`;
     (s.hazards || []).slice(0, 8).forEach((h, i) => { const n = i + 1; const c = this.compute(h, A); v['hz' + n] = this.hzName(h); v['pd' + n] = pw(h.pd); v['pt' + n] = pw(h.pt); v['pp' + n] = h.pd != null && h.pt != null ? pw(h.pd * h.pt) + (c.L ? ` (${c.L})` : '') : ''; });
     return v;
@@ -5014,6 +5016,15 @@ class Component extends DCLogic {
       out.texts.push([label, x0, c[2] - 2.6, fit(label, w, 8)]); out.circles.push(k); });
     if (rest.length) { const txt = rest.map(r => r[0]).join(' + '), v = rest.reduce((t, r) => t + r[1], 0); out.texts.push([txt, 402, 553.4, fit(txt, 96, 8)]); const vs = String(v); out.texts.push([vs, 508.8 - font.widthOfTextAtSize(vs, 9) / 2, 553.4, 9]); out.circles.push([4, 508.8, 556.0, vs.length > 1 ? 2 : 1]); }
     return out; }
+  kCol(x) { return String(x?.a ?? '').trim() || !String(x?.b ?? '').trim() ? 'a' : 'b'; }  // K comment goes with the Above score, or Below if only that is filled
+  // K row names on SD page 7: [x start, x end, baseline] per printed line (from the form), for underlining the selected item
+  K_LABELS = { domestic: [[70, 160, 622.8]], commercial: [[69.9, 171.7, 611.3]], educational: [[69.9, 122.3, 599.8]], offices: [[70, 101.1, 588.3]], industrial: [[69.9, 110.6, 576.8]], occOther: [[69.9, 97.8, 565.3]],
+    storage: [[69.9, 105.1, 539.1]], autoInfra: [[69.9, 175.7, 527.5], [42.5, 78.2, 516]], abandoned: [[69.9, 121.1, 504.6]], unoccOther: [[69.9, 145, 493]],
+    powerMains: [[70, 96.7, 422.4]], powerLocal: [[69.9, 93.9, 410.9]], powerAbove: [[69.9, 165, 399.4], [42.5, 75.4, 387.9]], powerUnder: [[70, 128.3, 376.4]],
+    waterMains: [[70, 96.7, 350.1]], waterLocal: [[69.9, 93.9, 338.7]], gasMain: [[70, 91.7, 312.4]], gasLocal: [[69.9, 93.9, 300.9]],
+    telephone: [[70, 117.2, 274.6]], coax: [[69.9, 176.1, 263.2]], mobile: [[69.9, 180.6, 251.7], [42.5, 67.1, 240.1]],
+    carparks: [[42.5, 83.1, 225.4]], footpaths: [[42.5, 135.4, 213.9]], waterStorage: [[42.5, 105.3, 202.4]], waterStruct: [[42.5, 152.1, 190.9]], otherInfra: [[42.5, 175.9, 179.4]],
+    publicOpen: [[42.5, 187.7, 167.9]], rural: [[42.5, 118.2, 156.4]], forest: [[42.5, 70.9, 144.9]], otherOpen: [[42.5, 186.5, 133.4], [42.5, 62, 121.9]], waterways: [[42.5, 92, 110.4]], park: [[42.5, 168.7, 98.9]], kOther: [[42.5, 70.4, 87.4]] };
   async sdExtras(doc, PL, s) {
     const ink = (this.props.sdInk ?? 'pencil') === 'pen' ? PL.rgb(0, 0, 0) : PL.rgb(0.42, 0.42, 0.45); const pages = doc.getPages(); const font = await doc.embedFont(PL.StandardFonts.Helvetica);
     // 1. hand-drawn circles around the scores that make up each section total
@@ -5030,7 +5041,16 @@ class Component extends DCLogic {
     const rowNote = (pg, txt, x, yBase, w) => { const one = wrap(txt, w, 8.5); if (one.length <= 1) { pg.drawText(one[0] || '', { x, y: yBase, size: 8.5, font, color: ink }); return; }
       const two = wrap(txt, w, 7).slice(0, 2); two.forEach((l, i) => pg.drawText(l, { x, y: yBase + 3.5 - i * 7.5, size: 7, font, color: ink })); };
     { const pg = pages[5]; if (pg) this.SD.JROWS.forEach(([k, , y]) => { const c = clean((s.sd?.j?.[k]?.c || '').trim()); if (c) rowNote(pg, c, 360, y, 184); }); }
-    { const pg = pages[6]; if (pg) this.SD.KROWS.forEach(([k, , y]) => { const c = clean((s.sd?.k?.[k]?.c || '').toString().trim()); if (c) rowNote(pg, c, 372, y, 186); }); }
+    { const pg = pages[6]; if (pg) { const sz = 9;  // same size as the scores printed by the form
+      this.SD.KROWS.forEach(([k, , y]) => { const x = s.sd?.k?.[k] || {}; const c = clean(String(x.c || '').trim());
+        // underline the selected item's name (only rows inside a group, e.g. Water supply – Mains / Local)
+        const lab = this.K_LABELS[k]; const has = String(x.a ?? '').trim() || String(x.b ?? '').trim() || c;
+        if (lab && has && k !== 'roads' && k !== 'railways') lab.forEach(([x0, x1, yb]) => pg.drawLine({ start: { x: x0, y: yb - 1.6 }, end: { x: x1, y: yb - 1.6 }, thickness: 0.85, color: ink }));
+        if (!c) return;
+        if (y >= 285) { rowNote(pg, c, 372, y, 186); return; }
+        // lower rows: "score (comment)" inside the Above/Below column, wrapped to stay between its lines
+        const col = this.kCol(x); const [cx0, cx1] = col === 'a' ? [207.5, 282] : [284.5, 360]; const w = cx1 - cx0;
+        const txt = `${String(x[col] ?? '').trim()} (${c})`.trim(); wrap(txt, w, sz).forEach((l, i) => { const lw = font.widthOfTextAtSize(l, sz); pg.drawText(l, { x: cx0 + (w - lw) / 2, y: y - i * 10, size: sz, font, color: ink }); }); }); } }
     // 3. photo pages at the end: 2 columns × 4, "Photo N. caption"
     const ph = (s.photos || []).map((p, i) => ({ ...p, no: i + 1 })).filter(p => p?.src); if (!ph.length) return;  // Photo N always matches file PNN
     const W = 595.28, H = 841.89, mx = 42, gap = 20, colW = (W - 2 * mx - gap) / 2, top = 790, rowH = (top - 40) / 4, imgH = rowH - 30; const site = s.A?.siteNo || '';
