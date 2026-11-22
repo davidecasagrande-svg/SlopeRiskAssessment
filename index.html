@@ -2706,7 +2706,7 @@ function renderMeas(ctx, it, k) {
 function sectionFrame(ctx, labels, scale, W, H, ink) {
   const n = (labels || []).length; if (!n) return; const bh = H / n; ctx.save(); ctx.fillStyle = ink || '#1d1f20'; ctx.strokeStyle = ink || '#1d1f20';
   labels.forEach((L, i) => { const y0 = i * bh; if (i) { ctx.lineWidth = 2; ctx.setLineDash([16, 10]); ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke(); ctx.setLineDash([]); }
-    ctx.font = '600 26px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; const tx = `Cross section ${L}–${L}′  ·  1:${scale}`; ctx.fillText(tx, 16, y0 + 28); const w = ctx.measureText(tx).width; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(16, y0 + 46); ctx.lineTo(16 + w, y0 + 46); ctx.stroke(); });
+    ctx.font = '600 26px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; const tx = `Section ${L}–${L}′   1:${scale}`; ctx.fillText(tx, 16, y0 + 28); const w = ctx.measureText(tx).width; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(16, y0 + 46); ctx.lineTo(16 + w, y0 + 46); ctx.stroke(); });
   ctx.restore();
 }
 // Symbol labels that can be pulled away from their symbol; a leader arrow then points back to it.
@@ -4944,12 +4944,17 @@ class Component extends DCLogic {
     const SK = this.SK; if (!SK) return null; const W = 1200, H = 1200; const items = this.pad.items; hzLines = hzLines || []; phLines = phLines || [];
     const Q = 2;  // drawn sheets saved at twice the pad resolution so pencil lines and text stay sharp
     const layer = document.createElement('canvas'); layer.width = W * Q; layer.height = H * Q; const lc = layer.getContext('2d'); lc.scale(Q, Q); items.forEach(it => SK.render(lc, it, 1, '#1d1f20'));
-    const keys = SK.usedSymbols(items, lgHide); const FH = 64; const SH = SK.stripHeight(keys, hzLines, phLines, notes, W);
-    const c = document.createElement('canvas'); c.width = W * Q; c.height = (H + FH + SH) * Q; const ctx = c.getContext('2d'); ctx.scale(Q, Q);
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H + FH + SH); ctx.lineWidth = 1;
+    // S01 / S02 (SD pages 2 and 3): title at the top (PLAN (N.T.S.) above the drawing; "Section A–A′ 1:200" inside each section band), no footer line — the Slope ID is in the page header
+    const sdSheet = sk === 'S01' || sk === 'S02'; const TH = sk === 'S01' ? 60 : 0;
+    const keys = SK.usedSymbols(items, lgHide); const FH = sdSheet ? 0 : 64; const SH = SK.stripHeight(keys, hzLines, phLines, notes, W);
+    const c = document.createElement('canvas'); c.width = W * Q; c.height = (TH + H + FH + SH) * Q; const ctx = c.getContext('2d'); ctx.scale(Q, Q);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, TH + H + FH + SH); ctx.lineWidth = 1;
+    if (TH) { ctx.fillStyle = '#1d1f20'; ctx.textBaseline = 'middle'; ctx.font = '600 26px sans-serif'; ctx.fillText('PLAN (N.T.S.)', 20, 28); ctx.fillRect(20, 45, ctx.measureText('PLAN (N.T.S.)').width, 2); }
+    ctx.save(); ctx.translate(0, TH);
     for (let i = 0; i <= W; i += 20) { ctx.strokeStyle = i % 100 === 0 ? 'rgba(89,128,166,.45)' : 'rgba(89,128,166,.16)'; ctx.beginPath(); ctx.moveTo(i + .5, 0); ctx.lineTo(i + .5, H); ctx.moveTo(0, i + .5); ctx.lineTo(W, i + .5); ctx.stroke(); }
     const fr = this.pad.frame; if (fr && fr.labels.length) SK.sectionFrame(ctx, fr.labels, fr.scale, W, H, '#1d1f20');
-    ctx.drawImage(layer, 0, 0, W, H);
+    ctx.drawImage(layer, 0, 0, W, H); ctx.restore();
+    if (sdSheet) { SK.drawStrip(ctx, keys, hzLines, phLines, notes, 0, TH + H, W); return c; }
     const sc = this.pad.scale || this.state.scale, mps = sc / 100;
     const nts = sk === 'S01' || sk === 'M01'; const title = { S01: 'PLAN (N.T.S.)', M01: 'MONITORING INSTRUMENT LOCATION PLAN (N.T.S.)', S03: `LONGITUDINAL SECTION 1:${sc}` }[sk] || '';
     ctx.fillStyle = '#1d1f20'; ctx.textBaseline = 'middle'; let x = 20; if (title) { ctx.font = '600 26px sans-serif'; ctx.fillText(title, x, H + 30); const tw = ctx.measureText(title).width; ctx.fillRect(x, H + 47, tw, 2); x += tw + 30; }
@@ -5087,6 +5092,16 @@ class Component extends DCLogic {
     telephone: [[70, 117.2, 274.6]], coax: [[69.9, 176.1, 263.2]], mobile: [[69.9, 180.6, 251.7], [42.5, 67.1, 240.1]],
     carparks: [[42.5, 83.1, 225.4]], footpaths: [[42.5, 135.4, 213.9]], waterStorage: [[42.5, 105.3, 202.4]], waterStruct: [[42.5, 152.1, 190.9]], otherInfra: [[42.5, 175.9, 179.4]],
     publicOpen: [[42.5, 187.7, 167.9]], rural: [[42.5, 118.2, 156.4]], forest: [[42.5, 70.9, 144.9]], otherOpen: [[42.5, 186.5, 133.4], [42.5, 62, 121.9]], waterways: [[42.5, 92, 110.4]], park: [[42.5, 168.7, 98.9]], kOther: [[42.5, 70.4, 87.4]] };
+  // Drawn sheet on SD page 2 (plan) or 3 (sections): the form's printed grid is cleared (it has other squares than the app) and the sheet image, with its own grid, fills the area.
+  // Kept clear of: the "Sections must be drawn…" box (top right) and, on page 3, the Likelihood Allocation box (bottom right).
+  async placeDrawn(doc, pg, k, src) {
+    const PL = window.PDFLib; const white = PL.rgb(1, 1, 1);
+    const clear = k === 'S01' ? [[45.5, 149, 513.5, 588], [45.5, 737, 368.5, 26]] : [[45.5, 225.5, 513.5, 491.5], [45.5, 154, 449.5, 72], [45.5, 717, 367, 24.5]];
+    clear.forEach(([x, y, w, h]) => pg.drawRectangle({ x, y, width: w, height: h, color: white }));
+    const [bx, by, bw, bh] = k === 'S01' ? [50, 152, 504, 582] : [50, 228, 504, 486];
+    const raw = Uint8Array.from(atob(src.split(',')[1]), c => c.charCodeAt(0)); const img = /^data:image\/png/i.test(src) ? await doc.embedPng(raw) : await doc.embedJpg(raw);
+    const f = Math.min(bw / img.width, bh / img.height); const iw = img.width * f, ih = img.height * f; pg.drawImage(img, { x: bx + (bw - iw) / 2, y: by + bh - ih, width: iw, height: ih });
+  }
   async sdExtras(doc, PL, s) {
     const ink = (this.props.sdInk ?? 'pencil') === 'pen' ? PL.rgb(0, 0, 0) : PL.rgb(0.42, 0.42, 0.45); const pages = doc.getPages(); const font = await doc.embedFont(PL.StandardFonts.Helvetica);
     // 1. hand-drawn circles around the scores that make up each section total
@@ -5133,13 +5148,14 @@ class Component extends DCLogic {
     const isDrawn = async d => !!d?.src && (d.drawn === true || (d.drawn === undefined && (d.items || []).length > 0 && [1200, 2400].includes(await imgW(d.src))));
     const dFlag = { S01: await isDrawn(sk.S01), S02: await isDrawn(sk.S02) }; const drawn = k => dFlag[k];
     const vals = this.sdVals(s), ink = { ink: this.props.sdInk ?? 'pencil' };
-    const bytes = await this.SD.build(window.PDFLib, vals, cbs, { S01: drawn('S01') ? sk.S01?.src : undefined, S02: drawn('S02') ? sk.S02?.src : undefined, S01notes: drawn('S01') ? '' : sk.S01?.notes, S02notes: drawn('S02') ? '' : sk.S02?.notes }, ink);  // drawn sheets carry their own notes and the hazard list in the strip: nothing repeated on the form
+    const bytes = await this.SD.build(window.PDFLib, vals, cbs, { S01notes: drawn('S01') ? '' : sk.S01?.notes, S02notes: drawn('S02') ? '' : sk.S02?.notes }, ink);  // drawn sheets carry their own notes and the hazard list in the strip: nothing repeated on the form
     // Sketch pages: each sketch photo IS the page. S01 replaces page 2, S02 replaces page 3; extra sheets follow as full pages.
     const extra = k => (Array.isArray(sk[k]?.more) ? sk[k].more : []).filter(m => m?.src);
     const xFlag = {}; for (const k of ['S01', 'S02']) { xFlag[k] = []; for (const m of extra(k)) xFlag[k].push(await isDrawn(m)); }
     const pages = k => [sk[k]?.src ? { src: sk[k].src, drawn: drawn(k) } : null, ...extra(k).map((m, i) => ({ src: m.src, drawn: xFlag[k][i] }))].filter(Boolean);
     this._sdLayout = { S01: pages('S01').map(x => x.drawn), S02: pages('S02').map(x => x.drawn) };  // for the ZIP: drawn sheets are exported as their SD page
     const PL = window.PDFLib; const doc = await PL.PDFDocument.load(bytes); await this.sdExtras(doc, PL, s);
+    if (drawn('S01')) await this.placeDrawn(doc, doc.getPage(1), 'S01', sk.S01.src); if (drawn('S02')) await this.placeDrawn(doc, doc.getPage(2), 'S02', sk.S02.src);
     if (!pages('S01').length && !pages('S02').length) return new Blob([await doc.save()], { type: 'application/pdf' });
     // Draws a photo into the area from y0 up to the top of the page (fit, centred; a sideways photo is turned to the portrait page).
     const drawPhoto = async (pg, src, y0) => { const { width: W, height: H } = pg.getSize(); const AH = H - y0; const raw = Uint8Array.from(atob(src.split(',')[1]), c => c.charCodeAt(0)); const img = /^data:image\/png/i.test(src) ? await doc.embedPng(raw) : await doc.embedJpg(raw);
@@ -5147,9 +5163,9 @@ class Component extends DCLogic {
       if (!rot) { const k2 = Math.min(W / img.width, AH / img.height); const iw = img.width * k2, ih = img.height * k2; pg.drawImage(img, { x: (W - iw) / 2, y: y0 + (AH - ih) / 2, width: iw, height: ih }); }
       else { const k2 = Math.min(W / img.height, AH / img.width); const dw = img.width * k2, dh = img.height * k2; pg.drawImage(img, { x: (W + dh) / 2, y: y0 + (AH - dw) / 2, width: dw, height: dh, rotate: PL.degrees(90) }); } };
     // A drawn extra page gets its own copy of the form page (page 2 for plan, page 3 for sections, with its P(d)/P(t) table), the drawing in the sketch box.
-    const formPage = async (k, src) => { const d2 = await PL.PDFDocument.load(await this.SD.build(PL, vals, cbs, { [k]: src }, ink)); const [cp] = await doc.copyPages(d2, [k === 'S01' ? 1 : 2]); return cp; };
+    const formPage = async (k, src) => { const d2 = await PL.PDFDocument.load(await this.SD.build(PL, vals, cbs, {}, ink)); const [cp] = await doc.copyPages(d2, [k === 'S01' ? 1 : 2]); return cp; };
     const place = async (k, idx) => { const list = pages(k); if (!list.length) return; const base = doc.getPage(idx); const { width: W, height: H } = base.getSize();
-      for (let i = list.length - 1; i >= 1; i--) { if (list[i].drawn) doc.insertPage(idx + 1, await formPage(k, list[i].src)); else { const pg = doc.insertPage(idx + 1, [W, H]); await drawPhoto(pg, list[i].src, 0); } }
+      for (let i = list.length - 1; i >= 1; i--) { if (list[i].drawn) { const np = doc.insertPage(idx + 1, await formPage(k, list[i].src)); await this.placeDrawn(doc, np, k, list[i].src); } else { const pg = doc.insertPage(idx + 1, [W, H]); await drawPhoto(pg, list[i].src, 0); } }
       if (!list[0].drawn) { doc.removePage(idx); const pg = doc.insertPage(idx, [W, H]); await drawPhoto(pg, list[0].src, 0); } };  // photographed sheet 1 replaces the form page
     await place('S02', 2); await place('S01', 1);
     return new Blob([await doc.save()], { type: 'application/pdf' });
