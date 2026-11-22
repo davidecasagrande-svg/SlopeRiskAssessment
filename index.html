@@ -4405,7 +4405,7 @@ textarea.input { min-height: 90px; resize: vertical; }
       <button class="btn btn-secondary" style="min-height:48px" onClick="{{ downloadSummary }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>{{ summaryLabel }}</button>
       <button class="btn btn-secondary" style="min-height:48px" onClick="{{ downloadSD }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>{{ sdLabel }}</button>
       <button class="btn btn-primary" style="min-height:56px;font-size:16px" onClick="{{ downloadZip }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>{{ zipLabel }}</button>
-      <div style="font-size:12px;opacity:.7">RA.xlsx is the SRA Summary Report v3.12 (3 pages, same cells and print layout as the Checker's SRA Summary sheet), filled from everything entered here. SD.pdf is the original 9-page Slope Description Record v4 with every tick, value, sketch and score printed in place. RA.csv stays for RSMS. Names follow NNNNNN_YYYYMMDD_*.</div>
+      <div style="font-size:12px;opacity:.7">RA.xlsx is the SRA Summary Report v3.12 (3 pages, same cells and print layout as the Checker's SRA Summary sheet), filled from everything entered here. SD.pdf is the original 9-page Slope Description Record v4 with every tick, value, sketch and score printed in place. Names follow NNNNNN_YYYYMMDD_*.</div>
     </div>
   </sc-if>
 
@@ -4905,7 +4905,7 @@ class Component extends DCLogic {
     const f = (suf, cap) => ({ name: T.fileName(site, date, suf), caption: cap });
     const list = [];
     (s.photos || []).forEach((p, i) => list.push(f(`P${String(i + 1).padStart(2, '0')}.JPG`, p.caption || 'Photograph')));
-    list.push(f('RA.xlsx', 'SRA Summary Report v3.12'), f('RA.csv', 'Risk Analysis Sheet (RSMS)'));
+    list.push(f('RA.xlsx', 'SRA Summary Report v3.12'));
     this.sheetFiles(s).forEach(x => list.push(f(x.suf, x.caption)));
     const xtra = this.sheetFiles(s).filter(x => x.n > 1 && (x.k === 'S01' || x.k === 'S02')).length;
     list.push(f('SD.pdf', `Slope Description Record v4 (${9 + xtra + Math.ceil((s.photos || []).filter(p => p?.src).length / 8)} pages)`));
@@ -5084,16 +5084,18 @@ class Component extends DCLogic {
   summaryCells(s, p) {
     const A = s.A || {}, B = s.B || {}; const num = v => v === '' || v == null ? '' : (isFinite(+v) && String(v).trim() !== '' ? +v : v);
     const dmy = v => { const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : (v || ''); };
+    const xdate = v => { const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? (Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 86400000 : (v || ''); };  // Excel date serial (template cell is d-mmm-yyyy)
     const g1 = this.G?.toMGA2020(+A.lat1, +A.lon1), g2 = this.G?.toMGA2020(+A.lat2, +A.lon2);
     const c = {
-      B2: A.siteNo || '', H2: dmy(s.checkedDate || A.date), B3: dmy(A.date), E3: A.completedBy || '', H3: s.checkedBy || '',
+      B2: num(A.siteNo), H2: xdate(s.checkedDate || A.date), B3: xdate(A.date), E3: A.completedBy || '', H3: s.checkedBy || '',
       C5: this.guideClass(A), E5: num(B.overallH), G5: num(B.overallA), I5: this.guideMat(s), D6: (A.descr || '').trim(),
-      C9: A.roadNo || '', E9: A.startLink || '', G9: A.finishLink || '', I9: A.side || '',
+      C9: num(A.roadNo), E9: num(A.startLink), G9: num(A.finishLink), I9: A.side || '',
       C10: A.cwayCode || '', E10: num(A.startDist), G10: num(A.finishDist), I10: num(A.length),
       E11: num(A.lat1), G11: num(A.lon1), I11: num(A.ele1), E12: num(A.lat2), G12: num(A.lon2), I12: num(A.ele2),
       E13: g1 ? g1.zone : '', G13: g1 ? Math.round(g1.easting * 10) / 10 : '', I13: g1 ? Math.round(g1.northing * 10) / 10 : '',
       E14: g2 ? g2.zone : '', G14: g2 ? Math.round(g2.easting * 10) / 10 : '', I14: g2 ? Math.round(g2.northing * 10) / 10 : '',
-      B15: this.planRefOut(A), G15: num(A.planChainage), I15: A.planSide || '', B16: (() => { const loc = (A.locality || '').trim(); const u = this.mapsUrl(A); return loc && u ? { f: `HYPERLINK("${u}","${loc.replace(/"/g, '""')}")`, v: loc } : loc; })(),
+      B15: this.planRefOut(A), G15: num(A.planChainage), I15: A.planSide || '', B16: (A.locality || '').trim(),  // plain text: the final Excel cannot hold links
+     
       D18: num(A.aadt), F18: String(A.year ?? '').trim() ? num(A.year) : 'N/A', I18: num(A.speed), D19: num(A.lanesP ?? A.lanes), F19: num(A.lanesC ?? ''), I19: A.sight || '',
       F40: 'Page 2  Slope Identification No. ' + (A.siteNo || ''), F89: 'Page 3  Slope Identification No. ' + (A.siteNo || ''),
       B49: s.existingMeasures || '', B50: s.furtherInv || '', E50: s.remedial || '',
@@ -5120,6 +5122,8 @@ class Component extends DCLogic {
     this.sheetFiles(s).forEach(x => media.push([fn(x.suf), x.caption]));
     media.forEach(m => { m[0] = m[0].replace(/\.jpg$/i, '.jpg'); }); // Excel list only: lowercase .jpg
     for (let i = 0; i < 20; i++) { const m = media[i]; c['A' + (69 + i)] = m ? m[0] : ''; c['B' + (69 + i)] = m ? m[1] : ''; }
+    // No number stored as text (Excel's green triangle; the import would not read it): any cell that is just a number is written as a number
+    Object.keys(c).forEach(k => { const v = c[k]; if (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.trim())) c[k] = +v.trim(); });
     return c;
   }
   // SRA Summary template tweaks (applied once, in memory):
@@ -5139,11 +5143,14 @@ class Component extends DCLogic {
     ['H2', 'B3', 'E3', 'H3', 'C5', 'E5', 'G5', 'I5', 'D6', 'C9', 'E9', 'G9', 'I9', 'C10', 'E10', 'G10', 'I10', 'E11', 'G11', 'I11', 'E12', 'G12', 'I12', 'E13', 'G13', 'I13', 'E14', 'G14', 'I14', 'B15', 'G15', 'I15', 'B16', 'D18', 'F18', 'I18', 'D19', 'F19', 'I19', 'B49', 'B50', 'E50', 'A52'].forEach(r => refs.push(r));
     for (let r = 56; r <= 65; r++) ['A', 'B', 'D', 'H'].forEach(c => refs.push(c + r)); for (let r = 69; r <= 88; r++) ['A', 'B'].forEach(c => refs.push(c + r));
     refs.forEach(ref => { sh = sh.replace(new RegExp('(<c r="' + ref + '"[^>]*? s=")(\\d+)(")'), (a, x, n, z) => x + plain(+n) + z); });
+    // Slope Identification No. (B2) is a real number but always shows 6 digits with the leading zero (TfNSW: 098375, not 98375)
+    { const m = sh.match(/<c r="B2"[^>]*? s="(\d+)"/); if (m) { let xf = xfs[+m[1]]; xf = /numFmtId="/.test(xf) ? xf.replace(/numFmtId="\d+"/, 'numFmtId="169"') : xf.replace('<xf ', '<xf numFmtId="169" ');
+        xf = /applyNumberFormat="/.test(xf) ? xf.replace(/applyNumberFormat="\d"/, 'applyNumberFormat="1"') : xf.replace('<xf ', '<xf applyNumberFormat="1" '); xfs.push(xf);
+        sh = sh.replace(/(<c r="B2"[^>]*? s=")\d+"/, `$1${xfs.length - 1}"`);
+        st = st.replace(/<numFmts count="(\d+)">([\s\S]*?)<\/numFmts>/, (a, n, body) => `<numFmts count="${+n + 1}">${body}<numFmt numFmtId="169" formatCode="000000"/></numFmts>`); } }
     st = st.replace(fontsM[0], `<fonts count="${fonts.length}"${fontsM[2]}>${fonts.join('')}</fonts>`).replace(xfsM[0], `<cellXfs count="${xfs.length}">${xfs.join('')}</cellXfs>`);
-    sh = sh.replace(/(<col min="10" max="16384"[^>]*?)\/>/, '$1 hidden="1"/>');
-    sh = sh.replace(/<row r="(\d+)"([^>]*)>/g, (a, r, rest) => /ht="/.test(rest) ? a : `<row r="${r}"${rest} ht="12.75" customHeight="1">`);
-    if (!/<row r="91"/.test(sh)) sh = sh.replace(/(<row r="92")/, '<row r="91" ht="12.75" customHeight="1"/>$1');
-    sh = sh.replace(/<sheetFormatPr([^>]*?)\/>/, (a, x) => /zeroHeight/.test(x) ? a : `<sheetFormatPr${x} zeroHeight="1"/>`);
+    // Normal view like the TfNSW file: only column letters and row numbers, no page header or ruler, table from the top-left corner
+    sh = sh.replace(/<sheetView ([^>]*?)(\/?)>/, (a, attrs, sl) => `<sheetView ${attrs.replace(/\s*view="[^"]*"/, '').replace(/\s*zoomScale="\d+"/, ' zoomScale="100"').replace(/\s*topLeftCell="[^"]*"/, '')} topLeftCell="A1"${sl}>`);
     P['xl/styles.xml'] = st; P['xl/worksheets/sheet1.xml'] = sh; X._patched = true;
   }
   // ---- Import: slope list (Excel .xlsx or CSV), once per project. Columns matched by header name. ----
@@ -5257,7 +5264,6 @@ class Component extends DCLogic {
       if (!JSZip) { await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); }); JSZip = window.JSZip; }
       if (!JSZip) throw new Error('ZIP library unavailable offline — connect once to cache it.');
       const zip = new JSZip(); const site = s.A.siteNo || '000000'; const date = (s.A.date || '').replace(/-/g, '') || this.today(); const fn = suf => this.T.fileName(site, date, suf);
-      zip.file(fn('RA.csv'), this.raCsv(s));
       zip.file(fn('RA.xlsx'), await (this.patchSummaryTpl(), window.SRA_SUMMARY).build(JSZip, this.summaryCells(s, this.cur().p), s.A.siteNo));
       zip.file(fn('SD.pdf'), await this.sdPdf(s));
       const b64 = u => u.split(',')[1];
@@ -5359,7 +5365,7 @@ class Component extends DCLogic {
       out.lenLines = lines; }
     out.locality = A.locality || ''; out.setLocality = e => this.updS(x => { x.A.locality = e.target.value; });
     const mapsU = this.mapsUrl(A); out.openMaps = () => { if (!mapsU) { alert('Capture the GPS start (and end) point first — the map opens at the slope.'); return; } window.open(mapsU, '_blank'); };
-    out.mapsNote = mapsU ? 'Opens Google Maps at the slope so you can read nearby road, creek and place names for a precise locality. In the SRA Summary the locality name links to the same map.' : 'Google Maps opens at the slope once a GPS point is captured.';
+    out.mapsNote = mapsU ? 'Opens Google Maps at the slope so you can read nearby road, creek and place names for a precise locality. Type the locality name yourself: the SRA Summary has no links.' : 'Google Maps opens at the slope once a GPS point is captured.';
     out.fieldsTraffic = [fA('aadt', 'AADT'), fA('year', 'Year of count'), fA('lanesP', 'Lanes · prescribed dir.', { ph: A.lanes ? String(A.lanes) : '' }), fA('lanesC', 'Lanes · counter dir.'), fA('speed', 'Speed limit (km/h)')];
     out.sightOpts = ['Y', 'N'].map(o => this.optBtn(o, A.sight === o, () => this.updS(x => { x.A.sight = o; })));
     out.isNatural = A.slopeClass === 'Natural'; out.natSideOpts = [['above', '↑ Above the road'], ['below', '↓ Below the road']].map(([o, l]) => this.optBtn(l, A.natSide === o, () => this.updS(x => { x.A.natSide = o; })));
@@ -5660,7 +5666,7 @@ class Component extends DCLogic {
     out.slopeArl = sArl || '—'; out.slopeArlBg = sArl ? this.ARL_BG[sArl] : 'var(--color-surface)'; out.slopeArlFg = sArl ? this.ARL_FG[sArl] : 'inherit';
     out.slopeArlNote = sArl ? (sArl === 'ARL1' || sArl === 'ARL2' ? 'Higher-risk site: 100% audit and SRMP required (Asset Mgmt guideline).' : `${hs.length} hazard${hs.length === 1 ? '' : 's'} assessed`) : 'No hazards rated yet';
     out.hazardRows = hs.map(x => { const k = this.compute(x, A); const dash = v => v || '—'; return { n: x.n, type: x.text || x.mech || '—', ARL: dash(k.ARL), arlBg: k.ARL ? this.ARL_BG[k.ARL] : 'transparent', arlFg: k.ARL ? this.ARL_FG[k.ARL] : 'inherit', codes: [['S', dash(x.sVol || x.sBlock)], ['R', dash(x.r)], ['L', dash(k.L)], ['T', dash(k.T)], ['V', dash(k.V)], ['M', dash(k.M)], ['H', dash(k.H)], ['C', dash(k.Cl || x.cProp)]].map(([kk, vv]) => ({ k: kk, v: vv })) }; });
-    const missing = []; if (!A.siteNo) missing.push('site no'); if (!A.aadt && !(A.aadtNote || '').trim()) missing.push('AADT or AADT source note'); if (A.slopeClass === 'Retaining' && /^(Dry stone|Mortared)/.test(A.wallType || '') && !(s.hazards || []).some(x => x.special === 'wall')) missing.push('live-loading check (masonry wall)'); if (!A.lat1) missing.push('GPS start'); if (A.slopeClass === 'Natural' && !A.natSide) missing.push('natural slope above / below'); if (A.slopeClass === 'Retaining' && !A.structSide) missing.push('structure above / below'); if (!this.guideMat(s)) missing.push('material rock / soil'); if (!(A.length || s.B?.lengthCovered)) missing.push('site length'); if (!(A.roadNo && A.startLink && A.startDist !== '' && A.startDist != null)) missing.push('ROADLOC (road no, start link, start distance)'); if (!this.lanesOf(A)) missing.push('no. of lanes'); if (!A.speed) missing.push('speed limit'); if (!A.sight) missing.push('sight distance Y/N'); if ((s.photos || []).filter(p => /\b(end|start|finish)\b/i.test(p.caption || '')).length < 2) missing.push('photos from both ends (captions with start / finish / end)'); if (!s.sketches?.S01?.src) missing.push('plan sketch'); if (!s.sketches?.S02?.src) missing.push('cross-section sketch'); if (!s.photos?.length) missing.push('photos'); hs.forEach(x => { const k = this.compute(x, A); if (!k.ARL) missing.push(`hazard ${x.n} ratings`); if (k.tOvr && !(x.tOvrWhy || '').trim()) missing.push(`hazard ${x.n} reason for T overwrite`); }); if (!hs.length) missing.push('at least one hazard');
+    const missing = []; if (!A.siteNo) missing.push('site no'); if (!(A.locality || '').trim()) missing.push('locality name'); if (!A.aadt && !(A.aadtNote || '').trim()) missing.push('AADT or AADT source note'); if (A.slopeClass === 'Retaining' && /^(Dry stone|Mortared)/.test(A.wallType || '') && !(s.hazards || []).some(x => x.special === 'wall')) missing.push('live-loading check (masonry wall)'); if (!A.lat1) missing.push('GPS start'); if (A.slopeClass === 'Natural' && !A.natSide) missing.push('natural slope above / below'); if (A.slopeClass === 'Retaining' && !A.structSide) missing.push('structure above / below'); if (!this.guideMat(s)) missing.push('material rock / soil'); if (!(A.length || s.B?.lengthCovered)) missing.push('site length'); if (!(A.roadNo && A.startLink && A.startDist !== '' && A.startDist != null)) missing.push('ROADLOC (road no, start link, start distance)'); if (!this.lanesOf(A)) missing.push('no. of lanes'); if (!A.speed) missing.push('speed limit'); if (!A.sight) missing.push('sight distance Y/N'); if ((s.photos || []).filter(p => /\b(end|start|finish)\b/i.test(p.caption || '')).length < 2) missing.push('photos from both ends (captions with start / finish / end)'); if (!s.sketches?.S01?.src) missing.push('plan sketch'); if (!s.sketches?.S02?.src) missing.push('cross-section sketch'); if (!s.photos?.length) missing.push('photos'); hs.forEach(x => { const k = this.compute(x, A); if (!k.ARL) missing.push(`hazard ${x.n} ratings`); if (k.tOvr && !(x.tOvrWhy || '').trim()) missing.push(`hazard ${x.n} reason for T overwrite`); }); if (!hs.length) missing.push('at least one hazard');
     out.hasMissing = missing.length > 0; out.missingList = missing.join(', ');
     out.reportRows = (s.reports || []).map((r, i) => ({ n: i + 1, fields: [['author', 'Author', 'Name(s)', 'auto'], ['org', 'Organisation', '', 'auto'], ['title', 'Title', 'Report title', '1 / -1'], ['ref', 'File / Reference No.', 'e.g. NNNNNN_YYYYMMDD_SD.pdf', '1 / -1']].map(([k, label, placeholder, span]) => ({ label, placeholder, span, value: r[k] || '', onChange: e => this.updS(x => { x.reports[i][k] = e.target.value; }) })), remove: () => this.updS(x => { x.reports.splice(i, 1); }) }));
     out.noReports = !(s.reports || []).length; out.canAddReport = (s.reports || []).length < 10;
