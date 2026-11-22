@@ -2535,7 +2535,7 @@ const SYM = [
   ['decomp','Decomposed seam/zone','def','line'],['infill','Infilled seam/zone','def','line'],['crushed','Crushed seam/zone','def','line'],['sheared','Sheared zone','def','line'],
   ['crest','Crest of cut or embankment','surf','line'],['scarp','Scarp','surf','line'],['cliff','Cliff','surf','line'],['bos_vx','Break of slope – convex','surf','line'],['bos_cc','Break of slope – concave','surf','line'],['slope','Slope angle (of facet)','surf','stamp','Slope angle (°)'],['gully','Gully erosion','surf','line'],['soil','Soil (sheet) erosion','surf','area'],
   ['wf_perm','Water flow – permanent','water','line'],['wf_int','Water flow – intermittent','water','line'],['outflow','Outflow','water','stamp'],['inflow','Inflow','water','stamp'],['seep','Seepage','water','stamp'],['seepline','Seepage line','water','line'],['pond','Standing water (pond, dam)','water','area'],['damp','Damp or wet ground','water','area'],['culv1','Culvert – single cell','water','line'],['culvN','Culvert – multi cell','water','line'],
-  ['landslide','Landslide','fail','area'],['debris','Debris flow','fail','area'],['rockfall','Rock fall','fail','area'],
+  ['hzline','Hazard line – inferred (H…)','fail','line','Hazard no.'],['landslide','Landslide','fail','area'],['debris','Debris flow','fail','area'],['rockfall','Rock fall','fail','area'],
   ['m_rock','Rock','mat','area'],['m_soil','Soil','mat','area'],['m_ret','Retaining structure (section / outline)','mat','area'],['retwall','Retaining wall (plan trace)','mat','line'],['drystone','Dry stone wall','mat','line'],
   ['jopen','Major joint in rock face (opening mm)','def','line','Opening (mm)'],['tcrack','Tension crack (opening mm)','fail','line','Opening (mm)'],
   ['guard','Guardrail (plan)','road','line'],['guardx','Guardrail (section)','road','stamp'],['fence','Fenceline','road','line'],
@@ -2612,7 +2612,7 @@ function renderLine(ctx, it, k) {
     if (it.t) { const m = r[Math.floor(n/2)]; const t = nrm(m, 20*k); ctx.font = `600 ${18*k}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(it.t, t.x, t.y); }
     return;
   }
-  if (s === 'gb_app' || s === 'gb_inf' || s === 'seepline') ctx.setLineDash([14*k, 10*k]);
+  if (s === 'gb_app' || s === 'gb_inf' || s === 'seepline' || s === 'hzline') ctx.setLineDash([14*k, 10*k]);
   if (s === 'wf_perm') { wavy(ctx, p, 6*k, 26*k, k); endArrow(ctx, p, k); return; }
   if (s === 'wf_int') { ctx.setLineDash([14*k, 9*k]); wavy(ctx, p, 6*k, 26*k, k); ctx.setLineDash([]); endArrow(ctx, p, k); return; }
   if (s === 'crushed') { const r = resample(p, 6*k); path(ctx, r.map((q, i) => nrm(q, i % 2 ? 7*k : -7*k))); ctx.stroke(); return; }
@@ -2624,6 +2624,8 @@ function renderLine(ctx, it, k) {
     return;
   }
   path(ctx, p); ctx.stroke(); ctx.setLineDash([]);
+  if (s === 'hzline') { ctx.setLineDash([]); ctx.font = `${20*k}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; resample(p, 56*k).slice(1).forEach(q => { const t = nrm(q, -10*k*sd); ctx.fillText('?', t.x, t.y); });
+    if (it.t) { const a = anchor(it), t = hzLabel(it.t); ctx.font = `600 ${20*k}px sans-serif`; const w = Math.max(40*k, ctx.measureText(t).width + 14*k); const cx = a.x, cy = a.y - 30*k; ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(cx - w/2, cy - 15*k, w, 30*k); ctx.restore(); ctx.lineWidth = 2.6*k; ctx.strokeRect(cx - w/2, cy - 15*k, w, 30*k); ctx.fillText(t, cx, cy + 1*k); } }
   if (s === 'gb_inf') { ctx.font = `${20*k}px sans-serif`; ctx.textAlign = 'center'; resample(p, 56*k).slice(1).forEach(q => { const t = nrm(q, -10*k*sd); ctx.fillText('?', t.x, t.y); }); }
   if (s === 'crest') ticks(ctx, p, 14*k, 16*k, sd);
   if (s === 'scarp') ticks(ctx, p, 12*k, 20*k, sd);
@@ -2659,6 +2661,7 @@ function renderStamp(ctx, it, k) {
   ctx.save(); ctx.translate(it.x, it.y);
   if (s === 'pier') { ctx.rotate(a); ctx.lineWidth = 2.4*k; ctx.strokeRect(-24*k, -7*k, 48*k, 14*k); ctx.beginPath(); for (let x = -24; x < 24; x += 6) { ctx.moveTo(x*k, 7*k); ctx.lineTo((x + 6)*k, -7*k); } ctx.lineWidth = 1.2*k; ctx.stroke(); ctx.restore(); return; }
   if (s === 'wpit') { const h = 15*k; ctx.lineWidth = 2.4*k; ctx.strokeRect(-h, -h, 2*h, 2*h); ctx.beginPath(); ctx.arc(0, 0, 10*k, 0, 7); ctx.stroke(); ctx.font = `600 ${12*k}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('W', 0, 1*k); ctx.restore(); return; }
+  if (s === 'hazard' && it._noLbl && !it.t) { ctx.beginPath(); ctx.arc(0, 0, 5*k, 0, 7); ctx.fill(); ctx.restore(); return; }  // label moved away: a dot marks the spot, the arrow points to it
   if (s === 'hazard') { const t = hzLabel(it.t); ctx.font = `600 ${20*k}px sans-serif`; const w = Math.max(40*k, ctx.measureText(t).width + 14*k); ctx.lineWidth = 2.6*k; ctx.strokeRect(-w/2, -15*k, w, 30*k); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, 0, 1*k); ctx.restore(); return; }
   if (s === 'pole') { ctx.lineWidth = 2.4*k; ctx.beginPath(); ctx.arc(0, 0, 11*k, 0, 7); ctx.stroke(); ctx.beginPath(); const d = 7.8*k; ctx.moveTo(-d, -d); ctx.lineTo(d, d); ctx.moveTo(d, -d); ctx.lineTo(-d, d); ctx.stroke(); ctx.restore(); return; }
   if (s === 'tree') { ctx.lineWidth = 2*k; ctx.beginPath(); ctx.moveTo(0, 2*k); ctx.lineTo(0, 22*k); ctx.stroke(); [[0,-14],[-9,-8],[9,-8],[-6,0],[6,0]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x*k, y*k, 7*k, 0, 7); ctx.stroke(); }); ctx.restore(); return; }
@@ -2707,8 +2710,8 @@ function sectionFrame(ctx, labels, scale, W, H, ink) {
   ctx.restore();
 }
 // Symbol labels that can be pulled away from their symbol; a leader arrow then points back to it.
-const LBL = { slope:'t', photo:'t', sf_s:'t', sf_f:'t', access:'t', ratio:'t', jopen:'t', tcrack:'t', dim:'t', bed:'dip', joint:'dip', cleav:'dip', fol:'dip' };
-function lblText(it) { const f = LBL[it.sym]; const v = f ? it[f] : ''; if (v == null || v === '') return ''; return it.sym === 'slope' ? String(v).replace(/°?$/, '°') : String(v); }
+const LBL = { hazard:'t', hzline:'t', slope:'t', photo:'t', sf_s:'t', sf_f:'t', access:'t', ratio:'t', jopen:'t', tcrack:'t', dim:'t', bed:'dip', joint:'dip', cleav:'dip', fol:'dip' };
+function lblText(it) { const f = LBL[it.sym]; const v = f ? it[f] : ''; if (v == null || v === '') return ''; if (it.sym === 'hazard' || it.sym === 'hzline') return hzLabel(v); return it.sym === 'slope' ? String(v).replace(/°?$/, '°') : String(v); }
 function anchor(it) { if (it.x != null) return { x: it.x, y: it.y }; const r = resample(it.pts || [], 2); if (!r.length) return (it.pts || [])[0] || { x: 0, y: 0 }; const h = r[r.length-1].s / 2; return r.reduce((b, q) => Math.abs(q.s - h) < Math.abs(b.s - h) ? q : b, r[0]); }
 function lblBox(it, k) { const a = anchor(it), t = lblText(it); const w = Math.max(24, t.length * 10.5) * (k || 1), h = 24 * (k || 1); const cx = a.x + it.lo.x, cy = a.y + it.lo.y; return { a, t, cx, cy, x0: cx - w/2, x1: cx + w/2, y0: cy - h/2, y1: cy + h/2 }; }
 function drawDetached(ctx, it, k, ink) { const b = lblBox(it, k); if (!b.t) return; ctx.save(); ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.font = `600 ${18*k}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(b.t, b.cx, b.cy);
@@ -4109,7 +4112,7 @@ textarea.input { min-height: 90px; resize: vertical; }
       <div style="display:flex;gap:8px;overflow-x:auto;margin:0 -14px;padding:2px 14px" class="sra-scroll">
         <sc-for list="{{ hazardTabs }}" as="h" hint-placeholder-count="2">
           <button onClick="{{ h.pick }}" style="flex:none;min-height:56px;min-width:64px;padding:6px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:inherit;cursor:pointer;border:1px solid {{ h.border }};box-shadow:{{ h.shadow }};background:{{ h.bg }};color:{{ h.fg }}">
-            <span style="font-size:11px;opacity:.75">H{{ h.n }}</span><span style="font-family:var(--font-heading);font-weight:600;font-size:16px">{{ h.arl }}</span>
+            <span style="font-size:11px;opacity:.75">{{ h.code }}</span><span style="font-family:var(--font-heading);font-weight:600;font-size:16px">{{ h.arl }}</span>
           </button>
         </sc-for>
         <sc-if value="{{ canAddHazard }}" hint-placeholder-val="{{ true }}"><button class="btn btn-secondary" style="flex:none;min-height:56px" onClick="{{ addHazard }}">+ Hazard</button></sc-if>
@@ -4118,7 +4121,7 @@ textarea.input { min-height: 90px; resize: vertical; }
       <sc-if value="{{ hasHazard }}" hint-placeholder-val="{{ true }}">
         <div class="card blueprint" style="padding:12px;gap:10px">
           <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-          <div style="display:flex;justify-content:space-between;align-items:center"><div class="card-kicker">H{{ hz.n }} · type (Tables 1–3)</div><button class="btn btn-ghost" style="min-height:40px" onClick="{{ removeHazard }}">Remove</button></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><div class="card-kicker">{{ hz.code }} · type (Tables 1–3)</div><button class="btn btn-ghost" style="min-height:40px" onClick="{{ removeHazard }}">Remove</button></div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <sc-for list="{{ hzCats }}" as="c" hint-placeholder-count="3"><button class="btn {{ c.cls }}" style="min-height:44px" onClick="{{ c.pick }}">{{ c.label }}</button></sc-for>
           </div>
@@ -4338,6 +4341,17 @@ textarea.input { min-height: 90px; resize: vertical; }
             <div class="field" style="flex:1;min-width:140px"><label>Slope attribute score</label><input class="sra-input" inputMode="numeric" value="{{ attrScoreInput }}" placeholder="{{ attrScoreHintPh }}" onChange="{{ setAttrScore }}"></div>
             <div style="font-size:12px;opacity:.7;padding-bottom:12px">Hint from sections B–K: <b>{{ attrScore }}</b></div>
           </div>
+        </div>
+        <div class="card blueprint" style="padding:12px;gap:8px">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="card-kicker">Pedestrians</div>
+          <sc-if value="{{ pedIsCopy }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;line-height:1.45">{{ pedNote }}</div></sc-if>
+          <sc-if value="{{ pedCanAdd }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:13px">Does this failure also affect pedestrians (footpath, cycleway, bus stop)?</div>
+            <button class="btn btn-secondary" style="min-height:48px" onClick="{{ pedAdd }}">{{ pedAddLabel }}</button>
+          </sc-if>
+          <sc-if value="{{ pedHasCopy }}" hint-placeholder-val="{{ false }}"><button class="btn btn-secondary" style="min-height:48px" onClick="{{ pedOpen }}">{{ pedOpenLabel }}</button></sc-if>
+          <sc-if value="{{ pedFull }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;opacity:.75">The SRA Summary holds 8 hazards; remove one to add a pedestrian copy.</div></sc-if>
         </div>
       </sc-if>
     </div>
@@ -4677,7 +4691,7 @@ class Component extends DCLogic {
     this._flushNow = () => { clearTimeout(this._sv); this.flush(); }; window.addEventListener('pagehide', this._flushNow); document.addEventListener('visibilitychange', this._flushNow);
     const boot = async () => {
       if (!(window.SRA_T && window.SRA_G && window.SRA_R && window.SRA_X && window.SD_FORM && window.SRA_SK)) { this._t = setTimeout(boot, 60); return; }
-      this.SK = window.SRA_SK; this.SD = window.SD_FORM; this.patchE1(); this.T = window.SRA_T; this.G = window.SRA_G; this.REF = window.SRA_R.REF; this.readExif = window.SRA_X.readExif;
+      this.SK = window.SRA_SK; this.SD = window.SD_FORM; this.patchE1(); if (this.SD && !this.SD._p3) { this.SD.T.id3 = [3, 518, 755.9, 44, { s: 10 }]; this.SD.IMG.S02 = [3, 52, 224, 445, 488]; this.SD._p3 = true; } this.T = window.SRA_T; this.G = window.SRA_G; this.REF = window.SRA_R.REF; this.readExif = window.SRA_X.readExif;
       let data = await this.loadData();
       try { navigator.storage?.persist?.(); } catch (e) {}
       if (!data) data = this.demoData();
@@ -4724,7 +4738,7 @@ class Component extends DCLogic {
   }
   cur() { const d = this.state.data; const p = d?.projects.find(x => x.id === this.state.view.pid); const s = p?.slopes.find(x => x.id === this.state.view.sid); return { d, p, s }; }
   upd(fn) { const d = JSON.parse(JSON.stringify(this.state.data)); const p = d.projects.find(x => x.id === this.state.view.pid); const s = p?.slopes.find(x => x.id === this.state.view.sid); fn(d, p, s); this.save(d); }
-  updS(fn) { this.upd((d, p, s) => { if (s) { fn(s); if (s.checkedDate && !this._checking) { s.checkedBy = ''; s.checkedDate = ''; } } }); }
+  updS(fn) { this.upd((d, p, s) => { if (s) { fn(s); if (s.checkedDate && !this._checking) { s.checkedDate = ''; } } }); }  // a change needs a new sign-off; the checker's name stays
   setView(v) { this.setState({ view: { ...this.state.view, ...v } }, () => this.toTop()); }
   field(obj, key, label, opts = {}) { return { key, label, value: obj?.[key] ?? '', placeholder: opts.ph || '', type: opts.type || 'text', inputMode: opts.im || 'text', span: opts.span || 'auto', onChange: e => this.updS(s => { const o = s[opts.sec]; o[key] = e.target.value; }) }; }
   optBtn(label, active, pick, pts) { return { label, cls: active ? 'btn-primary' : 'btn-secondary', pick, pts: pts != null ? ` ${pts}` : '' }; }
@@ -4834,7 +4848,7 @@ class Component extends DCLogic {
     const deg = r => (((Math.round(r * 180 / Math.PI)) % 360) + 360) % 360; const p2 = n => String(n).padStart(2, '0'); const v = {};
     if (it.sym === 'photo') { const used = items.filter(x => x.sym === 'photo').map(x => x.t); let n = 1; while (used.includes('P' + p2(n))) n++; v.no = 'P' + p2(n); const dir = s?.photos?.[n - 1]?.meta?.direction; v.brg = dir != null ? String(Math.round(dir)) : it.drag ? String(deg(it.a - nA)) : ''; }
     else if (SK.DIP[it.sym]) { v.dip = ''; v.dd = it.drag ? String(deg(it.a + Math.PI / 2 - nA)) : ''; }
-    else if (it.sym === 'hazard') { const used = items.filter(x => x.sym === 'hazard').map(x => SK.hzLabel(x.t)); const free = (s?.hazards || []).find(h => !used.includes('H' + h.n)); v.no = 'H' + (free ? free.n : used.length + 1); }
+    else if (it.sym === 'hazard' || it.sym === 'hzline') { const used = items.filter(x => x.sym === it.sym).map(x => SK.hzLabel(x.t)); const free = (s?.hazards || []).find(h => !used.includes('H' + h.n)); v.no = 'H' + (free ? free.n : used.length + 1); }
     else if (it.sym === 'xsec') { const used = items.filter(x => x.sym === 'xsec').map(x => x.t); v.t = 'ABCDEFGHJK'.split('').find(l => !used.includes(l)) || ''; }
     else v.t = '';
     this.setState({ skDlg: { it, v } }); this.padRedraw(it);
@@ -4844,7 +4858,7 @@ class Component extends DCLogic {
     const out = { ...it }; delete out.drag;
     if (it.sym === 'photo') { const m = String(v.no || '').match(/\d+/); out.t = m ? 'P' + String(+m[0]).padStart(2, '0') : String(v.no || '').trim(); const b = num(v.brg); if (b != null) { out.a = +(nA + b * Math.PI / 180).toFixed(4); out.brg = n360(b); } }
     else if (SK.DIP[it.sym]) { const dd = num(v.dd), dip = num(v.dip); if (dd != null) { out.a = +(nA + dd * Math.PI / 180 - Math.PI / 2).toFixed(4); out.dd = n360(dd); } if (dip != null) out.dip = Math.max(0, Math.min(90, Math.round(dip))); }
-    else if (it.sym === 'hazard') { const m = String(v.no || '').match(/\d+/); if (!m) return; out.t = 'H' + (+m[0]); }
+    else if (it.sym === 'hazard' || it.sym === 'hzline') { const m = String(v.no || '').match(/\d+/); if (!m) return; out.t = 'H' + (+m[0]); }
     else if (it.kind === 'text') { const tx = this.textLabel(v); if (!tx) return; out.t = tx; if (it.sym === 'leader') { this.pad.pendLeader = out; this.setState({ skDlg: null, skLeadPend: true }); this.padRedraw(); return; } }
     else { const tx = String(v.t || '').trim(); out.t = it.sym === 'xsec' ? (tx || 'A') : tx; }
     this.pad.items.push(out); this.setState({ skDlg: null, skSel: out.kind === 'text' || this.SK.SIDED[out.sym] || this.SK.lblText(out) ? this.pad.items.length - 1 : null }, () => this.padRedraw()); this.padPersist();
@@ -4852,11 +4866,13 @@ class Component extends DCLogic {
   textLabel(v) { const tx = String(v.t || '').trim(), val = String(v.val || '').trim(); if (!val) return tx; const u = v.unit ?? 'm'; const vs = u === '°' ? `${val.replace(/°$/, '')}°` : u === 'm' ? `${val} m` : u === 'H:V' ? `${val} (H:V)` : u === '%' ? `${val.replace(/%$/, '')}%` : val; return tx ? `${tx} ${vs}` : vs; }
   TERMS = ['Verge', 'Shoulder', 'Drain', 'Carriageway lane', 'Start', 'End', 'Length', 'Height'];
   hzName(h) { const m = h?.mech || '', tx = (h?.text || '').trim(); if (!m) return tx; if (!tx || tx.toLowerCase().includes(m.toLowerCase())) return tx || m; return `${m} – ${tx}`; }
-  hzLines(s) { return (s?.hazards || []).map(h => `H${h.n} – ${this.hzName(h) || 'Hazard'}`); }
+  // Pedestrian copy of a hazard: own column / ratings, but keeps its parent's number and sketch marker ("H1 (pedestrian)")
+  hzCode(h, short) { return h?.pedOf ? `H${h.pedOf} ${short ? 'ped.' : '(pedestrian)'}` : `H${h?.n}`; }
+  hzLines(s) { return (s?.hazards || []).map(h => `${this.hzCode(h)} – ${this.hzName(h) || 'Hazard'}`); }
   newHz(n, cat, mech) { return { n, cat, mech: mech || '', text: '', sVol: null, sBlock: null, r: null, pd: null, pt: null, tMode: 'none', failLen: '', debris: null, cProp: null }; }
   matsOf(s) { const B = s?.B || {}; let m = Array.isArray(B.mats) ? B.mats.filter(Boolean) : (B.matType ? [B.matType] : []); if (B.matType && !m.includes(B.matType)) m = [B.matType, ...m]; if (s?.A?.slopeClass === 'Embankment' && !m.includes('Fill')) m = [...m, 'Fill']; return m; }
   aadtLine(s) { const t = (s?.A?.aadtNote || '').trim(); return t ? 'AADT: ' + t : ''; }
-  commentsOut(s) { const tl = (s?.hazards || []).map(h => { const k = this.compute(h, s.A); return k.tOvr ? `Hazard ${h.n}: temporal probability overwritten from ${k.tCalc || '—'} to ${k.T} based on experience${(h.tOvrWhy || '').trim() ? ' – ' + h.tOvrWhy.trim() : ''}.` : ''; }).filter(Boolean);
+  commentsOut(s) { const tl = (s?.hazards || []).map(h => { const k = this.compute(h, s.A); return k.tOvr ? `${h.pedOf ? `Hazard ${h.pedOf} (pedestrian)` : `Hazard ${h.n}`}: temporal probability overwritten from ${k.tCalc || '—'} to ${k.T} based on experience${(h.tOvrWhy || '').trim() ? ' – ' + h.tOvrWhy.trim() : ''}.` : ''; }).filter(Boolean);
     return [(s?.comments || '').trim(), s?.A?.lidarId ? `LiDAR ID: ${s.A.lidarId}` : '', this.aadtLine(s), ...tl].filter(Boolean).join('\n'); }
   holdCheck(s) { const m = this.matsOf({ ...s, A: { ...s.A, slopeClass: '' } }); const txt = `${s.A?.descr || ''} ${s.A?.material || ''}`; const natMat = m.some(x => x === 'Rock' || x === 'Soil') && !m.includes('Fill'); const natTxt = /\b(rock|natural|sandstone|granite|basalt|shale|limestone)/i.test(txt) && !/\bfill/i.test(txt);
     if (!natMat && !natTxt) return ''; const why = []; if (natMat) why.push(`B.1 material is ${m.join(' / ')} with no Fill`); if (natTxt) why.push('the description reads as rock / natural ground'); return `This slope was recorded as natural material: ${why.join(', and ')}. An embankment is built of fill.`; }
@@ -4934,7 +4950,7 @@ class Component extends DCLogic {
     const hs = s.hazards || []; const c = hs.map(h => this.compute(h, s.A));
     const line = (label, fn) => rows.push([label, ...hs.map((h, i) => fn(h, c[i]) ?? '')]);
     rows.push(['Hazard/Failure Mechanism', ...hs.map(h => h.n)]);
-    line('Hazard Type', h => `H${h.n} – ${this.hzName(h)}`); line('Scale of Failure - Volume', h => h.sVol); line('Scale of Failure - Block Size', h => h.sBlock); line('Velocity of Failure', h => h.r); line('Likelihood Rating', (h, x) => x.L); line('Temporal Probability', (h, x) => x.T); line('Vulnerability', (h, x) => x.V); line('Consequence Class Loss of Life', (h, x) => x.Cl); line('Consequence Class Property', h => h.cProp); line('Slope Attribute Score', () => this.sdTotal(s)); line('Event Magnitude', (h, x) => x.M); line('Hazard Classification', (h, x) => x.H); line('Assessed Risk Level', (h, x) => x.ARL);
+    line('Hazard Type', h => `${this.hzCode(h)} – ${this.hzName(h)}`); line('Scale of Failure - Volume', h => h.sVol); line('Scale of Failure - Block Size', h => h.sBlock); line('Velocity of Failure', h => h.r); line('Likelihood Rating', (h, x) => x.L); line('Temporal Probability', (h, x) => x.T); line('Vulnerability', (h, x) => x.V); line('Consequence Class Loss of Life', (h, x) => x.Cl); line('Consequence Class Property', h => h.cProp); line('Slope Attribute Score', () => this.sdTotal(s)); line('Event Magnitude', (h, x) => x.M); line('Hazard Classification', (h, x) => x.H); line('Assessed Risk Level', (h, x) => x.ARL);
     rows.push([], ['App', `Slope Risk Assessment app — design and build © ${new Date().getFullYear()} ${this.props.author ?? 'Davide Casagrande'}`], ['Existing measures', s.existingMeasures], ['Possible remedial measures', s.remedial], ['Comments', this.commentsOut(s)]);
     return rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
   }
@@ -4961,7 +4977,7 @@ class Component extends DCLogic {
     SD.KROWS.forEach(([k, , y]) => { const x = sd.k?.[k] || {}; v[`k_${k}_a`] = x.a; v[`k_${k}_b`] = x.b; v[`k_${k}_n`] = x.n;
       if (String(x.c || '').trim() && y < 285) v[`k_${k}_${this.kCol(x)}`] = ''; });
     const pw = p => p == null ? '' : `1x10^${-Math.round(-Math.log10(p))}`;
-    (s.hazards || []).slice(0, 8).forEach((h, i) => { const n = i + 1; const c = this.compute(h, A); v['hz' + n] = this.hzName(h); v['pd' + n] = pw(h.pd); v['pt' + n] = pw(h.pt); v['pp' + n] = h.pd != null && h.pt != null ? pw(h.pd * h.pt) + (c.L ? ` (${c.L})` : '') : ''; });
+    (s.hazards || []).slice(0, 8).forEach((h, i) => { const n = i + 1; const c = this.compute(h, A); v['hz' + n] = this.hzCode(h, true); v['pd' + n] = pw(h.pd); v['pt' + n] = pw(h.pt); v['pp' + n] = h.pd != null && h.pt != null ? pw(h.pd * h.pt) + (c.L ? ` (${c.L})` : '') : ''; });
     return v;
   }
   // ---------- SD extras: circled scores, J/K side comments, photo pages ----------
@@ -5071,7 +5087,7 @@ class Component extends DCLogic {
     const isDrawn = async d => !!d?.src && (d.drawn === true || (d.drawn === undefined && (d.items || []).length > 0 && [1200, 2400].includes(await imgW(d.src))));
     const dFlag = { S01: await isDrawn(sk.S01), S02: await isDrawn(sk.S02) }; const drawn = k => dFlag[k];
     const vals = this.sdVals(s), ink = { ink: this.props.sdInk ?? 'pencil' };
-    const bytes = await this.SD.build(window.PDFLib, vals, cbs, { S01: drawn('S01') ? sk.S01?.src : undefined, S02: drawn('S02') ? sk.S02?.src : undefined, S01notes: [sk.S01?.notes, (s.hazards || []).length ? 'Hazards: ' + this.hzLines(s).join('; ') : ''].filter(Boolean).join('\n'), S02notes: sk.S02?.notes }, ink);
+    const bytes = await this.SD.build(window.PDFLib, vals, cbs, { S01: drawn('S01') ? sk.S01?.src : undefined, S02: drawn('S02') ? sk.S02?.src : undefined, S01notes: drawn('S01') ? '' : sk.S01?.notes, S02notes: drawn('S02') ? '' : sk.S02?.notes }, ink);  // drawn sheets carry their own notes and the hazard list in the strip: nothing repeated on the form
     // Sketch pages: each sketch photo IS the page. S01 replaces page 2, S02 replaces page 3; extra sheets follow as full pages.
     const extra = k => (Array.isArray(sk[k]?.more) ? sk[k].more : []).filter(m => m?.src);
     const xFlag = {}; for (const k of ['S01', 'S02']) { xFlag[k] = []; for (const m of extra(k)) xFlag[k].push(await isDrawn(m)); }
@@ -5126,7 +5142,7 @@ class Component extends DCLogic {
     cols.forEach((col, i) => {
       const h = (s.hazards || [])[i]; const k = h ? this.compute(h, A) : {};
       const put = (row, v) => { c[col + row] = v ?? ''; };
-      put(22, h ? this.hzName(h) : ''); put(24, h?.sVol); put(25, h?.sBlock); put(26, h?.r); put(27, k.L);
+      put(22, h ? this.hzName(h) + (h.pedOf ? ` (pedestrian, H${h.pedOf})` : '') : ''); put(24, h?.sVol); put(25, h?.sBlock); put(26, h?.r); put(27, k.L);
       put(30, k.T); put(31, k.V); put(32, k.Cl); put(33, h?.cProp);
       put(36, h ? num(attr) : ''); put(37, k.M); put(38, k.H); put(39, k.ARL);
       put(43, h?.elBuild); put(44, h?.elInfra); put(45, h?.elServ); put(46, h?.elOther);
@@ -5308,7 +5324,7 @@ class Component extends DCLogic {
       refOpen: !!st.ref && !!this.REF?.[st.ref], closeRef: () => this.setState({ ref: null }), termOpen: !!st.termOpen, openTerm: () => this.setState({ termOpen: true }), closeTerm: () => this.setState({ termOpen: false }), refTitle: '', refNote: '', refCols: [], refRows: [], refGrid: '1fr', refMinW: '100%',
       measOn: false, measModes: [], measFields: [], measDirs: [], secList: [], tbMeas: {}, tbMove: {}, skLgChips: [], skLgHasChips: false,
       dlgOpen: false, skPrevOpen: false, isNatural: false, isBridge: false, bridgeInOpts: [], hnBridge: false, hnBridgeHint: '', hzBridge: false, natSideOpts: [], structSideOpts: [], e1TypeOpts: [], sdIsE1: false, exKw: [], futKw: [], sheetTabs: [], holdOpen: false, matMulti: false, matDomOpts: [], dlgUnits: [], dlgHasUnits: false, dlgChips: [], dlgFields: [], dlgHasChips: false, lenLines: [], hnList: [], hnMechs: [], hnCats: [], skLegend: [], skLegendHz: [],
-      projects: [], slopes: [], steps: [], navBoxes: [], listOn: false, listAOn: false, listNoteOn: false, listLine: '', listBtn: '', impOn: false, impClassOn: false, impGeomOn: false, impLine: '', impBtn: '', navPrevDis: false, navNextDis: false, navPrevOp: '1', navNextOp: '1', photos: [], sketchImageCss: 'none', sketchImageSrc: '', capSrc: '', sketchHasImage: false, sketchNoImage: true, sketchMore: [], sketchHasMore: false, drawPages: [], drawPageNoteOn: false, tOvrOpts: [], tOvrOn: false, tOvrNoWhy: false, padSaveLabel: 'Save', revHere: [], revHereOn: false, revItems: [], revAboutOpts: [], revOpenAny: false, canMarkChecked: false, checkBlocked: false, chkSketches: [], chkHasSketch: false, chkNoSketch: true, skPrevTitle: '', skPrevW: '100%', skPrevZoomLabel: 'Zoom', sketchMoreNote: '', sketchMoreCamLabel: 'Take photo', stepA: false, stepB: false, stepSketch: false, stepDesc: false, stepPhotos: false, stepRisk: false, stepExport: false, stepCheck: false,
+      projects: [], slopes: [], steps: [], navBoxes: [], pedIsCopy: false, pedCanAdd: false, pedHasCopy: false, pedFull: false, listOn: false, listAOn: false, listNoteOn: false, listLine: '', listBtn: '', impOn: false, impClassOn: false, impGeomOn: false, impLine: '', impBtn: '', navPrevDis: false, navNextDis: false, navPrevOp: '1', navNextOp: '1', photos: [], sketchImageCss: 'none', sketchImageSrc: '', capSrc: '', sketchHasImage: false, sketchNoImage: true, sketchMore: [], sketchHasMore: false, drawPages: [], drawPageNoteOn: false, tOvrOpts: [], tOvrOn: false, tOvrNoWhy: false, padSaveLabel: 'Save', revHere: [], revHereOn: false, revItems: [], revAboutOpts: [], revOpenAny: false, canMarkChecked: false, checkBlocked: false, chkSketches: [], chkHasSketch: false, chkNoSketch: true, skPrevTitle: '', skPrevW: '100%', skPrevZoomLabel: 'Zoom', sketchMoreNote: '', sketchMoreCamLabel: 'Take photo', stepA: false, stepB: false, stepSketch: false, stepDesc: false, stepPhotos: false, stepRisk: false, stepExport: false, stepCheck: false,
     };
     out.credit = `App design and build © ${new Date().getFullYear()} ${this.props.author ?? 'Davide Casagrande'}. Rating tables reproduced from the TfNSW Guide to Slope Risk Analysis v4 (© Transport for NSW).`;
     if (!d) return { ...out, headerTitle: 'Slope Risk Assessment', headerSub: 'Loading…' };
@@ -5457,7 +5473,7 @@ class Component extends DCLogic {
         remove: () => { if (!confirm(`Remove sheet ${i + 2} (${this.sheetNo(s, sk, i + 2)})? Later sketch numbers will close up.`)) return; this.updS(x => { const cur = x.sketches[sk] || {}; const mm = [...(cur.more || [])]; mm.splice(i, 1); x.sketches[sk] = { ...cur, more: mm }; }); } })).filter(Boolean);
       out.onSketchMore = async e => { const files = [...(e.target.files || [])]; e.target.value = ''; if (!files.length) return; const srcs = []; for (const f of files) srcs.push(await this.shrink(f, 3000, 0.92));
         this.updS(x => { const cur = { ...(x.sketches[sk] || {}) }; const mm = [...(cur.more || [])]; srcs.forEach(src => { if (!cur.src) { cur.src = src; cur.drawn = false; } else mm.push({ src, caption: '' }); }); cur.more = mm; x.sketches[sk] = cur; }); }; }
-    out.sketchNotes = skd.notes || ''; out.sketchPage = sk === 'S01' ? 'page 2' : 'page 3'; out.sketchNotesLabel = sk === 'S01' || sk === 'S02' ? `Notes (printed under the sketch on SD ${sk === 'S01' ? 'page 2' : 'page 3'})` : 'Notes (printed in the strip below the drawing)'; out.setSketchNotes = e => { const val = e.target.value; this.updS(x => { x.sketches[sk] = { ...(x.sketches[sk] || {}), notes: val }; }); };
+    out.sketchNotes = skd.notes || ''; out.sketchPage = sk === 'S01' ? 'page 2' : 'page 3'; out.sketchNotesLabel = 'Notes (printed in the strip below the drawing)'; out.setSketchNotes = e => { const val = e.target.value; this.updS(x => { x.sketches[sk] = { ...(x.sketches[sk] || {}), notes: val }; }); };
     out.sketchCaption = skd.caption || ''; out.setSketchCaption = e => this.updS(x => { x.sketches[sk] = { ...(x.sketches[sk] || {}), caption: e.target.value }; });
     const SK = this.SK; const padKey = `${v.sid}:${sk}:${pg}`;
     out.isSectionSketch = sk === 'S02';
@@ -5479,7 +5495,7 @@ class Component extends DCLogic {
     out.padDown = e => this.padDown(e); out.padMove = e => this.padMove(e); out.padUp = () => this.padUp();
     out.padUndo = () => { const h = this.pad.hist || []; if (h.length) { this.pad.items = JSON.parse(h.pop()); this.pad.last = null; } else if (this.pad.items?.length) this.pad.items.pop(); else return; this.padRedraw(); this.padPersist(true); };
     out.padClear = () => { if (this.pad.items?.length && !confirm('Clear the whole drawing?')) return; this.pad.items = []; this.padRedraw(); this.padPersist(); };
-    const sheetArgs = () => [A, sk, sk === 'S01' ? this.hzLines(s) : [], skp.lgHide || [], sk === 'S01' ? this.photoLines(s) : [], sk === 'S03' || sk === 'M01' ? (skd.notes || '') : ''];
+    const sheetArgs = () => [A, sk, sk === 'S01' ? this.hzLines(s) : [], skp.lgHide || [], sk === 'S01' ? this.photoLines(s) : [], skd.notes || ''];  // notes print in the strip of every drawn sheet
     out.padSave = () => this.padSave(...sheetArgs());
     { const more = Array.isArray(skd.more) ? skd.more : []; const n = Math.max(1 + more.length, pg); const kKey = `${v.sid}:${sk}`; const goPg = i => this.setState({ skPage: { ...(st.skPage || {}), [kKey]: i }, skSel: null, meas: null });
       out.drawPages = Array.from({ length: n }, (_, i) => { const d = i ? (more[i - 1] || {}) : skd; const photo = d.src && !d.drawn && !(d.items || []).length; return { label: `Page ${i + 1}${photo ? ' (photo)' : ''}`, cls: i + 1 === pg ? 'btn-primary' : 'btn-secondary', pick: () => goPg(i + 1) }; });
@@ -5504,7 +5520,7 @@ class Component extends DCLogic {
       out.hnBridge = isBr; out.hnBridgeHint = A.bridgeIn ? `Hazards from ${A.bridgeIn === 'cut' ? 'Table 1 (cutting)' : 'Table 2 (embankment)'}.` : 'Pick Cut or Fill first: the hazard list follows Table 1 (cutting) or Table 2 (embankment).';
       out.hnMechs = (isBr && !A.bridgeIn ? [] : T.HAZARD_TYPES[hnCat]).map(m => { const n = hsAll.filter(h => h.cat === hnCat && h.mech === m && !!h.bridge === isBr).length; return { label: n ? `${m} · ${n}` : `+ ${m}`, cls: n ? 'btn-primary' : 'btn-secondary', pick: () => { if (hsAll.length >= 8) { alert('The SRA Summary holds up to 8 hazards per slope.'); return; } this.updS(x => { const nh = this.newHz(x.hazards.length + 1, hnCat, m); if (isBr) nh.bridge = true; x.hazards.push(nh); }); } }; });
       out.hnEmpty = !hsAll.length; out.hzCount = `${hsAll.length} / 8`;
-      out.hnList = hsAll.map((h, i) => { const placed = items.some(x => x.sym === 'hazard' && SK && SK.hzLabel(x.t) === 'H' + h.n); return { code: 'H' + h.n, mech: `${h.mech || 'Type not set'} · ${h.bridge ? `Bridge abutment (${h.cat === 'Embankment' ? 'fill' : 'cut'})` : h.cat}`, text: h.text && h.text !== h.mech ? h.text : '', ph: 'Location / note, e.g. E end above bench', setText: e => { const val = e.target.value; this.updS(x => { x.hazards[i].text = val; }); }, canPlace: st.sketchMode === 'draw', placeLabel: placed ? 'Placed ✓' : 'Place', place: () => this.setState({ skTool: 'sym', skSym: 'hazard', skHzPreset: h.n, skPal: false }), remove: () => { const rated = h.pd != null || h.sVol || h.r || h.cProp; if (!confirm(`Remove H${h.n}${rated ? ' and its risk ratings' : ''}? Hazards after it are renumbered — check the H labels on the sketch.`)) return; this.updS(x => { x.hazards.splice(i, 1); x.hazards.forEach((y, j) => { y.n = j + 1; }); }); this.setState({ hzIdx: 0 }); } }; }); }
+      out.hnList = hsAll.map((h, i) => { const placed = items.some(x => (x.sym === 'hazard' || x.sym === 'hzline') && SK && SK.hzLabel(x.t) === 'H' + (h.pedOf || h.n)); return { code: this.hzCode(h, true), mech: `${h.mech || 'Type not set'} · ${h.bridge ? `Bridge abutment (${h.cat === 'Embankment' ? 'fill' : 'cut'})` : h.cat}`, text: h.text && h.text !== h.mech ? h.text : '', ph: 'Location / note, e.g. E end above bench', setText: e => { const val = e.target.value; this.updS(x => { x.hazards[i].text = val; }); }, canPlace: st.sketchMode === 'draw', placeLabel: placed ? 'Placed ✓' : 'Place', place: () => this.setState({ skTool: 'sym', skSym: 'hazard', skHzPreset: h.n, skPal: false }), remove: () => { const rated = h.pd != null || h.sVol || h.r || h.cProp; if (!confirm(`Remove H${h.n}${rated ? ' and its risk ratings' : ''}? Hazards after it are renumbered — check the H labels on the sketch.`)) return; this.updS(x => { x.hazards.splice(i, 1); x.hazards.forEach((y, j) => { y.n = j + 1; }); }); this.setState({ hzIdx: 0 }); } }; }); }
     if (st.skDlg && SK) { const { it, v: dv } = st.skDlg; const hasN = (this.pad.items || []).some(x => x.sym === 'north'); const northTxt = hasN ? 'the north arrow on this sketch' : 'the top of the sheet (no north arrow yet — place one first if the sketch is not drawn north-up)';
       const setV = k => e => { const val = e.target.value; this.setState(s0 => ({ skDlg: s0.skDlg ? { ...s0.skDlg, v: { ...s0.skDlg.v, [k]: val } } : null })); };
       const fld = (k, label, im, ph) => ({ label, value: dv[k] ?? '', inputMode: im || 'text', placeholder: ph || '', onChange: setV(k), onKey: e => { if (e.key === 'Enter') this.dlgOk(); } });
@@ -5512,7 +5528,7 @@ class Component extends DCLogic {
       out.dlgOpen = true; out.dlgIcon = SK.icon(it.sym || 'text'); out.dlgTitle = SK.BY[it.sym || 'text'].label; out.dlgChips = []; out.dlgChipsLabel = ''; out.dlgFields = []; out.dlgNote = ''; out.dlgHasUnits = false; out.dlgUnits = []; out.dlgPreview = '';
       if (it.sym === 'photo') { out.dlgChipsLabel = 'Photos on this slope'; out.dlgChips = (s.photos || []).map((ph, i) => { const code = 'P' + String(i + 1).padStart(2, '0'); const b = ph.meta?.direction; return { label: [code, b != null ? Math.round(b) + '°' + (ph.meta?.dirRef === 'M' ? 'M' : '') : '', ph.caption].filter(Boolean).join(' · '), cls: dv.no === code ? 'btn-primary' : 'btn-secondary', pick: () => setVals({ no: code, ...(b != null ? { brg: String(Math.round(b)) } : {}) }) }; }); out.dlgFields = [fld('no', 'Photo no.', 'text', 'P01'), fld('brg', 'Bearing (° from north)', 'decimal', '0–359')]; out.dlgNote = `Direction the camera faced, clockwise from ${northTxt}. Picking a geotagged photo fills its compass bearing${it.drag ? '; otherwise your drag direction is used' : ''}.`; }
       else if (SK.DIP[it.sym]) { out.dlgFields = [fld('dip', 'Dip (°)', 'decimal', '0–90'), fld('dd', 'Dip direction (°)', 'decimal', '0–359')]; out.dlgNote = `Dip direction clockwise from ${northTxt}. The strike line is drawn square to it, the tick points down-dip and the dip is written beside it.`; }
-      else if (it.sym === 'hazard') { out.dlgChipsLabel = 'Hazard notes'; out.dlgChips = (s.hazards || []).map(h => ({ label: `H${h.n} – ${this.hzName(h) || 'Hazard'}`, cls: dv.no === 'H' + h.n ? 'btn-primary' : 'btn-secondary', pick: () => setVals({ no: 'H' + h.n }) })); out.dlgFields = [fld('no', 'Hazard no.', 'text', 'H1')]; out.dlgNote = 'List hazards under Hazard notes (below the sketch) so they carry through to Risk analysis.'; }
+      else if (it.sym === 'hazard' || it.sym === 'hzline') { out.dlgChipsLabel = 'Hazard notes'; out.dlgChips = (s.hazards || []).filter(h => !h.pedOf).map(h => ({ label: `H${h.n} – ${this.hzName(h) || 'Hazard'}`, cls: dv.no === 'H' + h.n ? 'btn-primary' : 'btn-secondary', pick: () => setVals({ no: 'H' + h.n }) })); out.dlgFields = [fld('no', 'Hazard no.', 'text', 'H1')]; out.dlgNote = 'List hazards under Hazard notes (below the sketch) so they carry through to Risk analysis.'; }
       else if (it.sym === 'xsec') { out.dlgFields = [fld('t', 'Section label', 'text', 'A')]; out.dlgNote = 'Drawn as A – A′. Use the same label on the section sketch S02.'; }
       else if (it.sym === 'slope') { out.dlgFields = [fld('t', 'Slope angle (°)', 'decimal', 'e.g. 35')]; }
       else if (it.sym === 'jopen' || it.sym === 'tcrack') { out.dlgFields = [fld('t', 'Opening (mm)', 'decimal', it.sym === 'jopen' ? 'e.g. 200' : 'e.g. 50')]; out.dlgNote = 'Written beside the trace. Leave blank if not measured.'; }
@@ -5594,14 +5610,20 @@ class Component extends DCLogic {
     const ux = this.props.ratingUx ?? 'steps';
     out.isSteps = ux === 'steps'; out.isCards = ux === 'cards'; out.isMatrix = ux === 'matrix'; out.notMatrix = ux !== 'matrix';
     const hs = s.hazards || []; const hi = Math.min(st.hzIdx, Math.max(0, hs.length - 1)); const h = hs[hi]; const c = this.compute(h, A);
-    out.hazardTabs = hs.map((x, i) => { const r = this.compute(x, A).ARL; const act = i === hi; return { n: x.n, arl: r || '—', pick: () => this.setState({ hzIdx: i }), bg: r ? this.ARL_BG[r] : 'transparent', fg: r ? this.ARL_FG[r] : 'var(--color-text)', border: act ? 'var(--color-text)' : 'var(--color-divider)', shadow: act ? 'inset 0 -4px 0 var(--color-text)' : 'none' }; });
+    out.hazardTabs = hs.map((x, i) => { const r = this.compute(x, A).ARL; const act = i === hi; return { n: x.n, code: this.hzCode(x, true), arl: r || '—', pick: () => this.setState({ hzIdx: i }), bg: r ? this.ARL_BG[r] : 'transparent', fg: r ? this.ARL_FG[r] : 'var(--color-text)', border: act ? 'var(--color-text)' : 'var(--color-divider)', shadow: act ? 'inset 0 -4px 0 var(--color-text)' : 'none' }; });
     out.canAddHazard = hs.length < 8;
     out.addHazard = () => { this.updS(x => { x.hazards.push(this.newHz(x.hazards.length + 1, this.catOf(A))); }); this.setState({ hzIdx: hs.length }); };
     out.hasHazard = !!h;
     if (h) {
       const setH = fn => this.updS(x => { fn(x.hazards[hi]); });
-      out.hz = { n: h.n, text: h.text || '', T: c.T || '—', V: c.V || '—', failLen: h.failLen ?? '' };
-      out.removeHazard = () => { this.updS(x => { x.hazards.splice(hi, 1); x.hazards.forEach((y, i) => { y.n = i + 1; }); }); this.setState({ hzIdx: Math.max(0, hi - 1) }); };
+      out.hz = { n: h.n, code: this.hzCode(h), text: h.text || '', T: c.T || '—', V: c.V || '—', failLen: h.failLen ?? '' };
+      out.removeHazard = () => { const kids = hs.filter(y => y.pedOf === h.n); if (kids.length && !confirm(`Remove ${this.hzCode(h)} and its pedestrian copy?`)) return;
+        this.updS(x => { const gone = x.hazards[hi].n; const old = x.hazards.filter((y, i) => i !== hi && y.pedOf !== gone); const map = {}; old.forEach((y, i) => { map[y.n] = i + 1; }); old.forEach(y => { y.n = map[y.n]; if (y.pedOf) y.pedOf = map[y.pedOf]; }); x.hazards = old; }); this.setState({ hzIdx: Math.max(0, hi - 1) }); };
+      // Pedestrians: copy this hazard into a new column, rated again for people on foot (same failure, own T, V and C)
+      { const kid = hs.findIndex(y => y.pedOf === h.n); out.pedIsCopy = !!h.pedOf; out.pedCanAdd = !h.pedOf && kid < 0 && hs.length < 8; out.pedHasCopy = !h.pedOf && kid >= 0; out.pedFull = !h.pedOf && kid < 0 && hs.length >= 8;
+        out.pedAddLabel = `Add ${this.hzCode(h)} (pedestrian) — copies all data`; out.pedOpenLabel = `Open ${this.hzCode(h)} (pedestrian)`; out.pedOpen = () => this.setState({ hzIdx: kid });
+        out.pedNote = h.pedOf ? `Copy of H${h.pedOf} for pedestrians. Set the temporal probability (T) for pedestrian use, and check velocity and consequence. Changes to H${h.pedOf} are not copied here.` : '';
+        out.pedAdd = () => { this.updS(x => { const c = JSON.parse(JSON.stringify(x.hazards[hi])); c.n = x.hazards.length + 1; c.pedOf = x.hazards[hi].n; x.hazards.push(c); }); this.setState({ hzIdx: hs.length }); }; }
       out.hzCats = [...Object.keys(T.HAZARD_TYPES).map(cat => this.optBtn(cat, !h.bridge && h.cat === cat, () => setH(y => { y.cat = cat; y.mech = ''; delete y.bridge; }))),
         this.optBtn('Bridge abutment', !!h.bridge, () => setH(y => { y.bridge = true; const c2 = this.bridgeCat(A); if (y.cat !== c2) { y.cat = c2; y.mech = ''; } }))];
       out.hzBridge = !!h.bridge;
